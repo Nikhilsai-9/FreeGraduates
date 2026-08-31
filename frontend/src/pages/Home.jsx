@@ -128,7 +128,7 @@ export default function Home() {
               <Link to="/signup" className="btn btn-primary btn-lg">
                 Get Started Free &rarr;
               </Link>
-              <a href="#value-prop" className="btn btn-secondary btn-lg">
+              <a href="#journey" className="btn btn-secondary btn-lg">
                 Explore FreeGraduates
               </a>
             </div>
@@ -159,6 +159,7 @@ export default function Home() {
             </div>
 
             <div className="hero-dashboard-preview">
+              {/* Left Pane: Resume Snapshot */}
               <div className="preview-resume-pane">
                 <div className="mock-resume-header">
                   <div className="mock-applicant-name">Alex Morgan</div>
@@ -181,6 +182,7 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Right Pane: Live Insights */}
               <div className="preview-analytics-pane">
                 <div className="preview-score-card">
                   <div className="score-dial">
@@ -210,7 +212,7 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-           2. SOCIAL PROOF BAR
+           2. SOCIAL PROOF & STUDENT REACH BAR
            ========================================================== */}
       <section className="social-proof-bar">
         <div className="container social-proof-wrapper">
@@ -447,7 +449,7 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-           6. RESUME + JOB DESCRIPTION MATCHING DEMO
+           6. RESUME + JOB DESCRIPTION MATCHING
            ========================================================== */}
       <section className="section" id="matching">
         <div className="container feature-split-layout reversed">
@@ -583,13 +585,113 @@ export default function Home() {
               <div className="pipe-step-desc">Instant score breakdown and model answers.</div>
             </div>
           </div>
+
+          <div className="interview-feedback-grid">
+            <div className="feedback-meter-card">
+              <div className="meter-header">
+                <span>Technical Accuracy</span>
+                <span className="highlight-blue">88%</span>
+              </div>
+              <div className="meter-track">
+                <div className="meter-fill fill-blue" style={{ width: "88%" }}></div>
+              </div>
+              <div className="meter-note">Accurate explanation of database indexing tradeoffs.</div>
+            </div>
+
+            <div className="feedback-meter-card">
+              <div className="meter-header">
+                <span>Communication Clarity</span>
+                <span style={{ color: "var(--success)" }}>92%</span>
+              </div>
+              <div className="meter-track">
+                <div className="meter-fill fill-green" style={{ width: "92%" }}></div>
+              </div>
+              <div className="meter-note">Clear progression from problem statement to solution.</div>
+            </div>
+
+            <div className="feedback-meter-card">
+              <div className="meter-header">
+                <span>Answer Structure (STAR)</span>
+                <span style={{ color: "var(--primary)" }}>85%</span>
+              </div>
+              <div className="meter-track">
+                <div className="meter-fill fill-iris" style={{ width: "85%" }}></div>
+              </div>
+              <div className="meter-note">Quantified impact clearly in the Result step.</div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ==========================================================
-           9. PORTFOLIO BUILDER SECTION
+           9. ATS CHECKER SECTION
            ========================================================== */}
-      <section className="section section-mist" id="portfolio">
+      <section className="section section-mist" id="ats">
+        <div className="container">
+          <div className="ats-breakdown-wrapper">
+            <div className="ats-score-hero-box">
+              <div className="ats-big-dial">
+                <div className="ats-big-dial-inner">
+                  <span className="ats-big-score">82</span>
+                  <span className="ats-big-max">/ 100</span>
+                </div>
+              </div>
+              <h3 style={{ fontSize: "20px", fontWeight: "800", color: "var(--text)", marginBottom: "6px" }}>ATS Readiness Grade</h3>
+              <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "20px" }}>
+                Analyzed for font compatibility, section tags, table nesting, and standard headings.
+              </p>
+              <a href="#ats-scanner" className="btn btn-primary btn-sm">Run Sample Resume Check</a>
+            </div>
+
+            <div>
+              <span className="eyebrow">AUTOMATED SCREENING AUDIT</span>
+              <h2 className="section-title">Check your ATS score.</h2>
+              <p className="section-desc" style={{ marginBottom: "24px" }}>
+                Upload your resume and understand how ready it is for automated applicant screening systems before applying.
+              </p>
+
+              <div className="ats-category-list">
+                <div className="ats-cat-row">
+                  <div>
+                    <div className="ats-cat-title">Layout & Structure Formatting</div>
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>Standard headings used; no unreadable graphics or columns.</div>
+                  </div>
+                  <span className="ats-cat-status status-pass">Pass (100%)</span>
+                </div>
+
+                <div className="ats-cat-row">
+                  <div>
+                    <div className="ats-cat-title">Essential Contact Details</div>
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>Email, GitHub, LinkedIn, and location properly placed.</div>
+                  </div>
+                  <span className="ats-cat-status status-pass">Pass (100%)</span>
+                </div>
+
+                <div className="ats-cat-row">
+                  <div>
+                    <div className="ats-cat-title">Role-Specific Keyword Density</div>
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>Add 2 more technical tooling keywords to optimize match.</div>
+                  </div>
+                  <span className="ats-cat-status status-warning">Needs 2 Keywords</span>
+                </div>
+
+                <div className="ats-cat-row">
+                  <div>
+                    <div className="ats-cat-title">Typography & Bullet Readability</div>
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>Clean font hierarchy and bullet structure verified.</div>
+                  </div>
+                  <span className="ats-cat-status status-pass">Pass (100%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           10. PORTFOLIO BUILDER SECTION
+           ========================================================== */}
+      <section className="section" id="portfolio">
         <div className="container feature-split-layout reversed">
           <div className="feature-visual-side">
             <div className="portfolio-mock-browser">
@@ -642,9 +744,9 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-           10. JOBS & INTERNSHIPS DISCOVERY PREVIEW
+           11. JOBS & INTERNSHIPS DISCOVERY PREVIEW
            ========================================================== */}
-      <section className="section" id="jobs">
+      <section className="section section-mist" id="jobs">
         <div className="container">
           <div className="section-header text-center">
             <span className="eyebrow">OPPORTUNITY HUB</span>
@@ -722,7 +824,157 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-           11. INTEGRATED ATS CHECKER & AUDITOR
+           12. AUDIENCE FIT: BUILT FOR EVERY STAGE
+           ========================================================== */}
+      <section className="section" id="audience">
+        <div className="container">
+          <div className="section-header text-center">
+            <span className="eyebrow">WHO WE SERVE</span>
+            <h2 className="section-title">Built for every stage of your career journey.</h2>
+            <p className="section-desc">
+              Whether you are preparing for your very first campus drive or accelerating into your next professional chapter, FreeGraduates meets you where you are.
+            </p>
+          </div>
+
+          <div className="audience-grid-4">
+            <div className="audience-card">
+              <div className="aud-icon">🎓</div>
+              <h3 className="aud-title">Students</h3>
+              <p className="aud-desc">Create your first resume, organize academic projects, and prepare for campus placement season.</p>
+            </div>
+
+            <div className="audience-card">
+              <div className="aud-icon">🚀</div>
+              <h3 className="aud-title">Fresh Graduates</h3>
+              <p className="aud-desc">Refine entry-level job applications, target key skills, and build confidence through AI interview practice.</p>
+            </div>
+
+            <div className="audience-card">
+              <div className="aud-icon">🔍</div>
+              <h3 className="aud-title">Job Seekers</h3>
+              <p className="aud-desc">Optimize your resume against actual job descriptions, diagnose ATS bottlenecks, and discover active roles.</p>
+            </div>
+
+            <div className="audience-card">
+              <div className="aud-icon">⭐</div>
+              <h3 className="aud-title">Professionals</h3>
+              <p className="aud-desc">Elevate your executive communication, sharpen behavioral interview techniques, and level up your career.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           13. PLACEMENT PREPARATION SECTION
+           ========================================================== */}
+      <section className="section section-mist" id="placements">
+        <div className="container">
+          <div className="placement-prep-box">
+            <div className="section-header text-center">
+              <span className="eyebrow">CAMPUS & ENGINEERING DRIVES</span>
+              <h2 className="section-title">Prepare for placements with confidence.</h2>
+              <p className="section-desc">
+                Campus placement drives require systematic preparation across aptitude, technical coding, and HR rounds. FreeGraduates provides a structured checklist for engineering and university candidates.
+              </p>
+            </div>
+
+            <div className="placement-checklist-grid">
+              <div className="place-check-item">
+                <div className="check-badge">✓</div>
+                <div className="place-check-content">
+                  <h4>ATS-Clean Resume</h4>
+                  <p>Pass initial university shortlisting without formatting penalties.</p>
+                </div>
+              </div>
+
+              <div className="place-check-item">
+                <div className="check-badge">✓</div>
+                <div className="place-check-content">
+                  <h4>Technical Deep-Dives</h4>
+                  <p>Prepare project explanations, database indexing, and core CS fundamentals.</p>
+                </div>
+              </div>
+
+              <div className="place-check-item">
+                <div className="check-badge">✓</div>
+                <div className="place-check-content">
+                  <h4>HR & Behavioral Rounds</h4>
+                  <p>Practice situational answers with structured STAR frameworks.</p>
+                </div>
+              </div>
+
+              <div className="place-check-item">
+                <div className="check-badge">✓</div>
+                <div className="place-check-content">
+                  <h4>Live Project Portfolios</h4>
+                  <p>Showcase real code, live deployment links, and GitHub contributions.</p>
+                </div>
+              </div>
+
+              <div className="place-check-item">
+                <div className="check-badge">✓</div>
+                <div className="place-check-content">
+                  <h4>Communication Polish</h4>
+                  <p>Overcome hesitation and articulate your thoughts clearly in English.</p>
+                </div>
+              </div>
+
+              <div className="place-check-item">
+                <div className="check-badge">✓</div>
+                <div className="place-check-content">
+                  <h4>Job & Internship Alignment</h4>
+                  <p>Tailor your applications to on-campus and off-campus opportunities.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           14. FREE + OPEN SOURCE CORE VALUES
+           ========================================================== */}
+      <section className="section" id="opensource">
+        <div className="container">
+          <div className="open-source-banner text-center">
+            <span className="eyebrow">OPEN SOURCE PHILOSOPHY</span>
+            <h2 className="section-title">Career preparation should be accessible to everyone.</h2>
+            <p className="section-desc" style={{ maxWidth: "720px", marginInline: "auto" }}>
+              FreeGraduates is built as a free and open-source platform to make practical career tools accessible to students, graduates, and job seekers worldwide — with zero paywalls on essential preparation.
+            </p>
+
+            <div className="os-pillars">
+              <div className="os-pillar-item">
+                <div className="os-pillar-title">100% Free Core</div>
+                <p className="os-pillar-desc">
+                  Essential resume generation, ATS checking, and career guidance shouldn't be locked behind a subscription fee.
+                </p>
+              </div>
+
+              <div className="os-pillar-item">
+                <div className="os-pillar-title">Open Source Code</div>
+                <p className="os-pillar-desc">
+                  Built transparently in the open. Contributions, feedback, and community template contributions are warmly welcomed.
+                </p>
+              </div>
+
+              <div className="os-pillar-item">
+                <div className="os-pillar-title">Community Powered</div>
+                <p className="os-pillar-desc">
+                  Designed with students, educators, and hiring engineers to solve real hiring challenges fairly.
+                </p>
+              </div>
+            </div>
+
+            <a href="https://github.com/Nikhilsai-9/FreeGraduates" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ marginTop: "24px" }}>
+              Explore FreeGraduates on GitHub &rarr;
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           15. INTEGRATED ATS CHECKER & AUDITOR FORM
            ========================================================== */}
       <section className="section section-mist" id="ats-scanner">
         <div className="container">
@@ -763,7 +1015,7 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-           12. CAREER JOURNEY TIMELINE
+           16. CAREER JOURNEY TIMELINE
            ========================================================== */}
       <section className="section" id="journey">
         <div className="container">
@@ -822,7 +1074,7 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-           13. FINAL CALL TO ACTION
+           17. FINAL CALL TO ACTION
            ========================================================== */}
       <section className="final-cta-section">
         <div className="container">
@@ -844,7 +1096,7 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-           14. FOOTER
+           18. FOOTER
            ========================================================== */}
       <footer className="landing-site-footer">
         <div className="container footer-content-wrapper">
