@@ -18,52 +18,75 @@ export default function Navbar() {
   };
 
   return (
-    <header className="site-navbar">
-      <div className="container navbar-container">
-        <Link to="/" className="navbar-brand">
-          <div className="brand-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
+    <header className="site-header" role="banner">
+      <div className="container nav-container">
+        {/* Brand Logo */}
+        <Link to="/" className="brand-logo-group" aria-label="FreeGraduates Home">
+          <div className="brand-logo-mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 20V4h14" />
+              <path d="M5 12h10" />
+              <path d="M12 4l7 7" />
             </svg>
           </div>
-          <span className="brand-title">Free<span>Graduates</span></span>
+          <span className="brand-logo-name">Free<span>Graduates</span></span>
         </Link>
 
-        <nav className="navbar-links">
-          <Link
-            to="/builder/new"
-            className={`nav-item ${location.pathname.startsWith("/builder") ? "active" : ""}`}
-          >
-            Resume Builder
-          </Link>
-          <Link
-            to="/"
-            className={`nav-item ${location.pathname === "/" ? "active" : ""}`}
-          >
-            ATS Checker
-          </Link>
-          <Link
-            to="/dashboard"
-            className={`nav-item ${location.pathname === "/dashboard" ? "active" : ""}`}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/history"
-            className={`nav-item ${location.pathname === "/history" ? "active" : ""}`}
-          >
-            Audit History
-          </Link>
+        {/* Center Links */}
+        <nav role="navigation" aria-label="Main Navigation">
+          <ul className="nav-links">
+            <li>
+              {location.pathname === "/" ? (
+                <a href="#resume" className="nav-link">Resume</a>
+              ) : (
+                <Link to="/builder/new" className="nav-link">Resume</Link>
+              )}
+            </li>
+            <li>
+              {location.pathname === "/" ? (
+                <a href="#coach" className="nav-link">AI Coach</a>
+              ) : (
+                <Link to="/" className="nav-link">AI Coach</Link>
+              )}
+            </li>
+            <li>
+              {location.pathname === "/" ? (
+                <a href="#interview" className="nav-link">Interview</a>
+              ) : (
+                <Link to="/" className="nav-link">Interview</Link>
+              )}
+            </li>
+            <li>
+              {location.pathname === "/" ? (
+                <a href="#ats" className="nav-link">ATS Checker</a>
+              ) : (
+                <Link to="/" className="nav-link">ATS Checker</Link>
+              )}
+            </li>
+            <li>
+              {location.pathname === "/" ? (
+                <a href="#portfolio" className="nav-link">Portfolio</a>
+              ) : (
+                <Link to="/" className="nav-link">Portfolio</Link>
+              )}
+            </li>
+            <li>
+              {location.pathname === "/" ? (
+                <a href="#jobs" className="nav-link">Jobs</a>
+              ) : (
+                <Link to="/" className="nav-link">Jobs</Link>
+              )}
+            </li>
+          </ul>
         </nav>
 
-        {/* User Auth Actions */}
-        <div className="navbar-auth-actions">
+        {/* Right Actions: Login & Get Started Free */}
+        <div className="nav-actions">
           {currentUser ? (
             <div className="user-profile-menu">
+              <Link to="/dashboard" className="nav-login-btn" style={{ marginRight: '8px' }}>
+                Dashboard
+              </Link>
               <span className="user-email-tag" title={currentUser.email}>
                 {currentUser.displayName || currentUser.email?.split("@")[0]}
               </span>
@@ -72,14 +95,11 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <div className="auth-btn-cluster">
-              <Link to="/login" className="btn btn-secondary btn-sm">
-                Sign In
-              </Link>
-              <Link to="/signup" className="btn btn-primary btn-sm">
-                Create Account
-              </Link>
-            </div>
+            <>
+              <Link to="/login" className="nav-login-btn" id="navLoginBtn">Login</Link>
+              <div className="nav-divider" aria-hidden="true"></div>
+              <Link to="/signup" className="btn btn-primary btn-sm">Get Started Free</Link>
+            </>
           )}
         </div>
       </div>

@@ -1,18 +1,18 @@
 /* ==========================================================
-   AI RESUME ANALYZER — DESIGN SYSTEM & TOKENS
-   Plain CSS Only (No Frameworks)
+   FREEGRADUATES DESIGN SYSTEM & TOKENS
+   Exact match to variables.css & style.css
    ========================================================== */
 
 :root {
   /* Colors */
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-border: #bfdbfe;
+  --primary: #1a91f0;
+  --primary-hover: #127ed6;
+  --primary-light: #e6f4ff;
+  --primary-border: #b8e1ff;
 
-  --bg: #f8fafc;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-alt: #f1f5f9;
+  --surface-alt: #f8fafc;
 
   --text: #0f172a;
   --text-secondary: #334155;
@@ -20,9 +20,9 @@
   --border: #e2e8f0;
   --border-dark: #cbd5e1;
 
-  --success: #16a34a;
-  --success-light: #f0fdf4;
-  --success-border: #bbf7d0;
+  --success: #059669;
+  --success-light: #ecfdf5;
+  --success-border: #a7f3d0;
 
   --warning: #d97706;
   --warning-light: #fffbeb;
@@ -33,13 +33,13 @@
   --danger-border: #fecaca;
 
   /* Typography */
-  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Monaco, monospace;
 
   /* Sizing & Radius */
-  --radius-sm: 6px;
+  --radius-sm: 8px;
   --radius: 12px;
-  --radius-lg: 18px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
 
   /* Shadows */
@@ -93,7 +93,7 @@ input, textarea, select {
 /* --- Global Utilities --- */
 .container {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1140px;
   margin-inline: auto;
   padding-inline: 24px;
 }
@@ -103,24 +103,35 @@ input, textarea, select {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 10px 20px;
-  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: var(--radius-full);
   transition: var(--transition);
   border: 1px solid transparent;
+  text-decoration: none;
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 15px;
+}
+
+.btn-sm {
+  padding: 6px 16px;
+  font-size: 13px;
 }
 
 .btn-primary {
   background-color: var(--primary);
   color: #ffffff;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 6px rgba(26, 145, 240, 0.25);
 }
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: var(--shadow);
+  box-shadow: 0 4px 12px rgba(26, 145, 240, 0.35);
 }
 
 .btn-primary:disabled {
@@ -129,14 +140,15 @@ input, textarea, select {
 }
 
 .btn-secondary {
-  background-color: var(--surface);
-  color: var(--text-secondary);
+  background-color: #ffffff;
+  color: var(--text);
   border-color: var(--border-dark);
 }
 
 .btn-secondary:hover {
   background-color: var(--surface-alt);
-  color: var(--text);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .btn-danger {
@@ -193,6 +205,7 @@ input, textarea, select {
     color: #000000 !important;
   }
 
+  .site-header,
   .site-navbar,
   .btn,
   .toast-container,
@@ -204,27 +217,5 @@ input, textarea, select {
   .results-page-container {
     padding: 0 !important;
     max-width: 100% !important;
-  }
-
-  .results-sticky-header {
-    position: static !important;
-    box-shadow: none !important;
-    border-bottom: 2px solid #000000 !important;
-    padding-block: 10px !important;
-  }
-
-  .tab-nav {
-    display: none !important;
-  }
-
-  .tab-pane {
-    display: block !important;
-    page-break-inside: avoid;
-    margin-bottom: 24px;
-  }
-
-  .ui-card {
-    box-shadow: none !important;
-    border: 1px solid #cccccc !important;
   }
 }

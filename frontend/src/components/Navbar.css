@@ -1,81 +1,101 @@
-.site-navbar {
-  background-color: var(--surface);
-  border-bottom: 1px solid var(--border);
+.site-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  height: 68px;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  height: 72px;
   display: flex;
   align-items: center;
 }
 
-.navbar-container {
+.nav-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
 }
 
-.navbar-brand {
+.brand-logo-group {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 800;
-  font-size: 20px;
-  color: var(--text);
-  letter-spacing: -0.02em;
+  text-decoration: none;
 }
 
-.brand-icon {
-  width: 36px;
-  height: 36px;
-  background-color: var(--primary-light);
-  color: var(--primary);
-  border-radius: var(--radius-sm);
+.brand-logo-mark {
+  width: 38px;
+  height: 38px;
+  background-color: var(--primary);
+  color: #ffffff;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--primary-border);
+  box-shadow: 0 2px 4px rgba(26, 145, 240, 0.2);
 }
 
-.brand-title span {
+.brand-logo-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  font-family: var(--font-heading);
+}
+
+.brand-logo-name span {
   color: var(--primary);
 }
 
-.navbar-links {
+.nav-links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-@media (max-width: 768px) {
-  .navbar-links {
+@media (max-width: 860px) {
+  .nav-links {
     display: none;
   }
 }
 
-.nav-item {
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
+.nav-link {
   font-size: 14px;
   font-weight: 600;
   color: var(--muted);
+  text-decoration: none;
   transition: var(--transition);
 }
 
-.nav-item:hover {
-  color: var(--text);
-  background-color: var(--surface-alt);
-}
-
-.nav-item.active {
+.nav-link:hover {
   color: var(--primary);
-  background-color: var(--primary-light);
 }
 
-.navbar-auth-actions {
+.nav-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+}
+
+.nav-login-btn {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.nav-login-btn:hover {
+  color: var(--primary);
+}
+
+.nav-divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border);
 }
 
 .user-profile-menu {
@@ -92,10 +112,4 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.auth-btn-cluster {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
