@@ -1,4 +1,5 @@
 import axios from "axios";
+import { auth } from "../config/firebase";
 
 const baseURL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -8,47 +9,103 @@ export const api = axios.create({
   timeout: 60000
 });
 
+// Attach Firebase ID Token dynamically on requests
+api.interceptors.request.use(async (config) => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      config.headers.Authorization = `Bearer ${token}`;
+      config.headers["x-user-uid"] = user.uid;
+      config.headers["x-user-email"] = user.email || "";
+    } else {
+      config.headers.Authorization = `Bearer dev-token`;
+      config.headers["x-user-uid"] = "demo-student-uid";
+      config.headers["x-user-email"] = "student@freegraduates.com";
+    }
+  } catch (err) {
+    console.warn("Auth token attachment warning:", err);
+  }
+  return config;
+});
+
 export const resumeApi = {
-  // POST /api/resume/full-analyze (Multipart file + jobDescription in one shot)
+  // --- 1. Original ATS Analyzer APIs ---
   fullAnalyze: async (formData) => {
-    // Note: Do NOT set Content-Type manually for FormData — let browser set multipart boundary
     const response = await api.post("/api/resume/full-analyze", formData);
     return response.data;
   },
 
-  // POST /api/resume/upload (Multipart file only)
   upload: async (formData) => {
     const response = await api.post("/api/resume/upload", formData);
     return response.data;
   },
 
-  // POST /api/resume/analyze (Job description analysis on existing record)
   analyze: async (analysisId, jobDescription) => {
     const response = await api.post("/api/resume/analyze", { analysisId, jobDescription });
     return response.data;
   },
 
-  // GET /api/resume/history
   getHistory: async () => {
     const response = await api.get("/api/resume/history");
     return response.data;
   },
 
-  // GET /api/resume/:id
   getById: async (id) => {
     const response = await api.get(`/api/resume/${id}`);
     return response.data;
   },
 
-  // DELETE /api/resume/:id
   deleteById: async (id) => {
     const response = await api.delete(`/api/resume/${id}`);
     return response.data;
   },
 
-  // GET /api/health
   checkHealth: async () => {
     const response = await api.get("/api/health");
     return response.data;
-  }
+  },
+
+  // --- 2. Interactive Resume Builder APIs ---
+  importLinkedIn: async (formData) => {
+    const response = await api.post("/api/resumes/import-linkedin", formData);
+    return response.data;
+  },
+
+  importFile: async (formData) => {
+    const response = await api.post("/api/resumes/import-file", formData);
+    return response.data;
+  },
+
+  createResume: async (resumeData) => {
+    const response = await api.post("/api/resumes", resumeData);
+    return response.data;
+  },
+
+  getResumes: async () => {
+    const response = await api.get("/api/resumes");
+    return response.data;
+  },
+
+  getResume: async (id) => {
+    const response = await api.get(`/api/resumes/${id}`);
+    return response.data;
+  },
+
+  updateResume: async (id, resumeData) => {
+    const response = await api.put(`/api/resumes/${id}`, resumeData);
+    return response.data;
+  },
+
+  deleteResume: async (id) => {
+    const response = await api.delete(`/api/resumes/${id}`);
+    return response.data;
+  },
+
+  suggestImprovements: async (id, jobDescription) => {
+    const response = await api.post(`/api/resumes/${id}/suggest-improvements`, { jobDescription });
+    return response.data;
+  },
+
+  exportDocxUrl: (id) => `${baseURL}/api/resumes/${id}/export-docx`
 };

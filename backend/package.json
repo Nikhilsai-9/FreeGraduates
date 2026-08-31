@@ -12,8 +12,10 @@
   "dependencies": {
     "@google/genai": "latest",
     "cors": "^2.8.5",
+    "docx": "^9.7.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "firebase-admin": "^14.3.0",
     "mammoth": "^1.8.0",
     "mongoose": "^8.9.5",
     "morgan": "^1.10.0",

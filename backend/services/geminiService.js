@@ -15,7 +15,133 @@ const getClient = () => {
   return aiInstance;
 };
 
-// Full JSON Schema with required on every object level per P3 and importance enum per P8
+// Full Resume Schema for Import
+const resumeImportSchema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING },
+    personalInfo: {
+      type: Type.OBJECT,
+      properties: {
+        fullName: { type: Type.STRING },
+        email: { type: Type.STRING },
+        phone: { type: Type.STRING },
+        location: { type: Type.STRING },
+        linkedin: { type: Type.STRING },
+        github: { type: Type.STRING },
+        portfolio: { type: Type.STRING }
+      },
+      required: ["fullName", "email", "phone", "location", "linkedin", "github", "portfolio"]
+    },
+    summary: { type: Type.STRING },
+    workExperience: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          company: { type: Type.STRING },
+          role: { type: Type.STRING },
+          startDate: { type: Type.STRING },
+          endDate: { type: Type.STRING },
+          current: { type: Type.BOOLEAN },
+          bullets: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          }
+        },
+        required: ["company", "role", "startDate", "endDate", "current", "bullets"]
+      }
+    },
+    education: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          institution: { type: Type.STRING },
+          degree: { type: Type.STRING },
+          field: { type: Type.STRING },
+          year: { type: Type.STRING },
+          grade: { type: Type.STRING }
+        },
+        required: ["institution", "degree", "field", "year", "grade"]
+      }
+    },
+    skills: {
+      type: Type.OBJECT,
+      properties: {
+        technical: { type: Type.ARRAY, items: { type: Type.STRING } },
+        tools: { type: Type.ARRAY, items: { type: Type.STRING } },
+        soft: { type: Type.ARRAY, items: { type: Type.STRING } }
+      },
+      required: ["technical", "tools", "soft"]
+    },
+    projects: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING },
+          description: { type: Type.STRING },
+          techStack: { type: Type.ARRAY, items: { type: Type.STRING } },
+          link: { type: Type.STRING }
+        },
+        required: ["title", "description", "techStack", "link"]
+      }
+    },
+    certifications: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING }
+    },
+    languages: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING }
+    }
+  },
+  required: [
+    "title",
+    "personalInfo",
+    "summary",
+    "workExperience",
+    "education",
+    "skills",
+    "projects",
+    "certifications",
+    "languages"
+  ]
+};
+
+// Schema for Real-Time Diff Improvement Suggestions
+const diffSuggestionsSchema = {
+  type: Type.OBJECT,
+  properties: {
+    targetRoleMatchScore: { type: Type.NUMBER },
+    roleAlignmentSummary: { type: Type.STRING },
+    suggestions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          section: {
+            type: Type.STRING,
+            enum: ["summary", "experience", "skills", "projects", "general"]
+          },
+          targetId: { type: Type.STRING },
+          originalContent: { type: Type.STRING },
+          suggestedContent: { type: Type.STRING },
+          reason: { type: Type.STRING }
+        },
+        required: ["section", "targetId", "originalContent", "suggestedContent", "reason"]
+      }
+    },
+    missingKeywords: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING }
+    }
+  },
+  required: ["targetRoleMatchScore", "roleAlignmentSummary", "suggestions", "missingKeywords"]
+};
+
+// Original ATS Analysis Schema
 const fullAnalysisResponseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -197,12 +323,12 @@ const fullAnalysisResponseSchema = {
 const parsedOnlySchema = fullAnalysisResponseSchema.properties.parsedData;
 
 const SYSTEM_INSTRUCTION_BASE = `You are an expert ATS (Applicant Tracking System) parser and principal technical recruiter.
-Your evaluations must be realistic, evidence-based, and objective (never inflated).
+Your evaluations must be realistic, evidence-based, and objective.
 You must return only valid JSON adhering strictly to the provided schema.
-Never omit a field. If information is genuinely absent from the resume, return an empty string, 0, or an empty array — but the key must always be present.`;
+Never omit a field. If information is genuinely absent, return an empty string, 0, or an empty array.`;
 
 /**
- * Executes a Gemini request with a 45s ceiling and backoff retries for transient errors.
+ * Executes a Gemini request with a 45s ceiling and backoff retries.
  */
 async function callGeminiWithRetry(prompt, schema, customInstruction) {
   const client = getClient();
@@ -222,7 +348,7 @@ async function callGeminiWithRetry(prompt, schema, customInstruction) {
             systemInstruction: `${SYSTEM_INSTRUCTION_BASE}\n${customInstruction || ""}`,
             responseMimeType: "application/json",
             responseSchema: schema,
-            thinkingConfig: { thinkingLevel: "low" } // P4: Low thinking for speed (~5s)
+            thinkingConfig: { thinkingLevel: "low" }
           }
         }),
         new Promise((_, reject) => {
@@ -239,8 +365,7 @@ async function callGeminiWithRetry(prompt, schema, customInstruction) {
         throw new Error("Received empty response from Gemini");
       }
 
-      const parsed = JSON.parse(rawText);
-      return parsed;
+      return JSON.parse(rawText);
     } catch (err) {
       const isTransient =
         err.message?.includes("429") ||
@@ -257,6 +382,55 @@ async function callGeminiWithRetry(prompt, schema, customInstruction) {
       }
     }
   }
+}
+
+/**
+ * Parses raw LinkedIn Profile PDF text into structured Resume format.
+ */
+export async function importLinkedInProfile(rawText) {
+  const prompt = `Convert this raw text extracted from a LinkedIn Profile PDF into a complete, professional, structured resume schema:
+
+LINKEDIN PROFILE TEXT:
+${rawText}`;
+
+  const customInstruction = `Extract the headline into summary if appropriate, map all Experience items into workExperience with clear bullet points, extract Education degrees and institutions, categorize all Skills into technical, tools, and soft, and extract Projects and Certifications.`;
+
+  return await callGeminiWithRetry(prompt, resumeImportSchema, customInstruction);
+}
+
+/**
+ * Parses standard resume files (PDF/DOCX) into full resume builder format.
+ */
+export async function importResumeFile(rawText) {
+  const prompt = `Extract all details from this resume document into the structured resume builder schema:
+
+RESUME DOCUMENT TEXT:
+${rawText}`;
+
+  const customInstruction = `Structure the candidate's personal contact info, professional summary, work experiences with structured bullet points, education, technical/tool/soft skills, and projects.`;
+
+  return await callGeminiWithRetry(prompt, resumeImportSchema, customInstruction);
+}
+
+/**
+ * Generates actionable before-and-after diff suggestions for the split-screen live editor.
+ */
+export async function generateResumeDiffSuggestions(resumeData, targetJobDescription) {
+  const prompt = `Analyze this candidate's resume JSON and provide actionable, high-impact diff suggestions to align it with the target role and job description.
+
+TARGET JOB DESCRIPTION:
+${targetJobDescription || "Software Engineering and Technology Roles"}
+
+CURRENT RESUME JSON:
+${JSON.stringify(resumeData, null, 2)}`;
+
+  const customInstruction = `Generate specific suggestions:
+1. For work experience bullets, rewrite weak or generic bullets with strong action verbs, quantifiable metrics, and relevant JD keywords. Include the item/bullet targetId.
+2. For the professional summary, propose a tailored version.
+3. Identify missing technical keywords and provide missingKeywords list.
+Set section to 'experience', 'summary', 'skills', or 'projects'.`;
+
+  return await callGeminiWithRetry(prompt, diffSuggestionsSchema, customInstruction);
 }
 
 /**

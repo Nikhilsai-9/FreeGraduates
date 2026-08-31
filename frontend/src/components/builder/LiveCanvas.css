@@ -1,0 +1,13 @@
+.live-canvas-viewport {
+  background-color: var(--surface-alt);
+  padding: 32px 24px;
+  overflow-y: auto;
+  height: calc(100vh - 132px);
+  display: flex;
+  justify-content: center;
+}
+
+.canvas-paper-wrapper {
+  max-width: 800px;
+  width: 100%;
+}

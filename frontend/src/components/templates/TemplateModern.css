@@ -1,0 +1,116 @@
+.template-canvas {
+  background-color: #ffffff;
+  padding: 40px;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  min-height: 1050px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.font-small { font-size: 13px; line-height: 1.4; }
+.font-medium { font-size: 14px; line-height: 1.5; }
+.font-large { font-size: 15px; line-height: 1.55; }
+
+.modern-header {
+  border-bottom: 2px solid var(--theme-color, #1a91f0);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modern-name {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.modern-contact-line {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.modern-section {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.has-ai-badge {
+  border: 1px dashed var(--theme-color, #1a91f0);
+  padding: 8px;
+  border-radius: 6px;
+  background-color: rgba(26, 145, 240, 0.03);
+}
+
+.ai-pending-badge {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  background-color: var(--theme-color, #1a91f0);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 100px;
+  text-transform: uppercase;
+}
+
+.modern-section-title {
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--theme-color, #1a91f0);
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+
+.modern-summary-text {
+  font-size: 0.95em;
+  color: #334155;
+}
+
+.modern-skills-list {
+  font-size: 0.95em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modern-entry {
+  margin-bottom: 12px;
+}
+
+.modern-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.95em;
+}
+
+.entry-role { font-weight: 700; color: #0f172a; }
+.entry-company { font-weight: 600; color: #334155; }
+.entry-dates { font-size: 0.85em; color: #64748b; }
+.entry-tech { font-size: 0.85em; color: var(--theme-color, #1a91f0); font-weight: 600; }
+.entry-link { font-size: 0.85em; color: #64748b; }
+
+.modern-bullets {
+  padding-left: 18px;
+  margin-top: 4px;
+  font-size: 0.9em;
+  color: #334155;
+}
+
+.proj-desc-text {
+  font-size: 0.9em;
+  color: #334155;
+  margin-top: 2px;
+}

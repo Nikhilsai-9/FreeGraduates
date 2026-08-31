@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { connectDB } from "./config/db.js";
 import resumeRoutes from "./routes/resumeRoutes.js";
+import resumeBuilderRoutes from "./routes/resumeBuilderRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { MODEL } from "./services/geminiService.js";
 
@@ -24,7 +25,7 @@ app.use(
   cors({
     origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-user-uid", "x-user-email"],
     credentials: true
   })
 );
@@ -50,6 +51,7 @@ app.get("/api/health", (req, res) => {
 
 // API Routes
 app.use("/api/resume", resumeRoutes);
+app.use("/api/resumes", resumeBuilderRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

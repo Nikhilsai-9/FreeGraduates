@@ -19,14 +19,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 700;
-  font-size: 18px;
+  font-weight: 800;
+  font-size: 20px;
   color: var(--text);
+  letter-spacing: -0.02em;
 }
 
 .brand-icon {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   background-color: var(--primary-light);
   color: var(--primary);
   border-radius: var(--radius-sm);
@@ -43,11 +44,17 @@
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+}
+
+@media (max-width: 768px) {
+  .navbar-links {
+    display: none;
+  }
 }
 
 .nav-item {
-  padding: 8px 16px;
+  padding: 8px 14px;
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
@@ -63,4 +70,32 @@
 .nav-item.active {
   color: var(--primary);
   background-color: var(--primary-light);
+}
+
+.navbar-auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-profile-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-email-tag {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-btn-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
