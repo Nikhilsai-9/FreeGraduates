@@ -28,27 +28,27 @@ const PRESET_MATCHES = {
   }
 };
 
-const COACH_RESPONSES = {
-  introduce: "Coach: Great! Here is your 60-second introduction formula: 1) Present role & degree, 2) Highlight 1-2 major technical projects, 3) Explain why this engineering team excites you.",
-  star: "Coach: Use STAR: Situation (set context), Task (your goal), Action (what YOU coded/built), Result (quantified outcome, e.g. 40% speedup).",
-  salary: "Coach: When asked about salary expectations: 'My priority is finding the right engineering team. Based on market data for junior SDEs in this region, I am looking for a fair benchmark of ₹X - ₹Y.'"
+const COACH_TOPICS = {
+  introduce: "Coach: Use the Present-Past-Future formula! 1) Present degree & focus, 2) 1-2 major technical project outcomes, 3) Why this specific engineering role excites you.",
+  star: "Coach: Use STAR: Situation (context), Task (goal), Action (what YOU coded/built), Result (quantified metrics, e.g. 42% latency reduction).",
+  salary: "Coach: When asked about salary: 'My priority is finding the right engineering team. Based on market data for junior roles in this region, I am looking for a fair benchmark of ₹X - ₹Y.'"
 };
 
 export default function Home() {
-  // ATS Audit Upload State
+  // ATS Audit Upload Form State
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  // Interactive Demo States
+  // Interactive Demos State
   const [templateFilter, setTemplateFilter] = useState("all");
   const [jdPreset, setJdPreset] = useState("sde");
   const [chatMessages, setChatMessages] = useState([
     { sender: "user", text: "I don't know how to introduce myself in an interview." },
     {
       sender: "ai",
-      text: "Coach: Let's build your introduction step by step using the Present-Past-Future formula: 1) Present status & degree, 2) Major project results, 3) Why this specific engineering role."
+      text: "Coach: Let's build your introduction step by step using the Present-Past-Future formula: 1) Present status & degree, 2) 1-2 major project results, 3) Why this specific engineering role."
     }
   ]);
 
@@ -87,7 +87,7 @@ export default function Home() {
   };
 
   const handleCoachClick = (topicKey) => {
-    const text = COACH_RESPONSES[topicKey];
+    const text = COACH_TOPICS[topicKey];
     if (text) {
       setChatMessages((prev) => [
         ...prev,
@@ -105,8 +105,8 @@ export default function Home() {
       <Toast message={toastMessage} type="error" onClose={() => setToastMessage("")} />
 
       {/* ==========================================================
-          1. HERO SECTION
-          ========================================================== */}
+           1. HERO SECTION
+           ========================================================== */}
       <section className="hero-section">
         <div className="container hero-content-grid">
           {/* Left Hero Copy */}
@@ -161,7 +161,7 @@ export default function Home() {
             <div className="hero-dashboard-preview">
               <div className="preview-resume-pane">
                 <div className="mock-resume-header">
-                  <div className="mock-applicant-name">Rahul Sharma</div>
+                  <div className="mock-applicant-name">Alex Morgan</div>
                   <div className="mock-applicant-title">Aspiring Software Engineer &bull; B.Tech CS</div>
                 </div>
                 <div className="mock-resume-row">
@@ -171,11 +171,12 @@ export default function Home() {
                     <span className="mock-tag tag-match">Spring Boot</span>
                     <span className="mock-tag tag-match">PostgreSQL</span>
                     <span className="mock-tag">Docker</span>
+                    <span className="mock-tag">Data Structures</span>
                   </div>
                 </div>
                 <div className="mock-resume-row">
                   <div className="mock-row-title">Featured Project</div>
-                  <p style={{ fontSize: "12px", fontWeight: "700", color: "var(--text)" }}>Distributed Cache Engine</p>
+                  <p style={{ fontSize: "11px", color: "var(--text)", fontWeight: "600" }}>Distributed Cache Engine</p>
                   <p style={{ fontSize: "11px", color: "var(--muted)" }}>Reduced API query latency by 42% using LRU eviction.</p>
                 </div>
               </div>
@@ -197,6 +198,11 @@ export default function Home() {
                     "Your project bullet is strong! Quantify the scale: mention requests per second handled."
                   </p>
                 </div>
+
+                <div className="preview-interview-card">
+                  <div className="interview-card-label">Interview Readiness</div>
+                  <div className="interview-card-status">84% Technical &bull; 91% Communication</div>
+                </div>
               </div>
             </div>
           </div>
@@ -204,15 +210,15 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-          2. SOCIAL PROOF & STUDENT REACH BAR
-          ========================================================== */}
+           2. SOCIAL PROOF BAR
+           ========================================================== */}
       <section className="social-proof-bar">
         <div className="container social-proof-wrapper">
           <span className="social-proof-label">Designed for students & graduates aiming for</span>
           <div className="social-proof-logos">
-            <span className="college-logo-item">Product Companies</span>
-            <span className="college-logo-item">High-Growth Startups</span>
             <span className="college-logo-item">Tech Giants</span>
+            <span className="college-logo-item">High-Growth Startups</span>
+            <span className="college-logo-item">Product Companies</span>
             <span className="college-logo-item">Open-Source Ecosystems</span>
             <span className="college-logo-item">Campus Placements</span>
           </div>
@@ -220,8 +226,8 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-          3. PRIMARY VALUE PROPOSITION (6 PILLARS)
-          ========================================================== */}
+           3. PRIMARY VALUE PROPOSITION (6 PILLARS)
+           ========================================================== */}
       <section className="section section-mist" id="value-prop">
         <div className="container">
           <div className="section-header text-center">
@@ -284,16 +290,86 @@ export default function Home() {
               <p className="pillar-desc">
                 Browse curated entry-level opportunities, engineering roles, and internships with zero clutter or sponsored spam.
               </p>
-              <Link to="/builder/new" className="pillar-tag">Browse Roles &rarr;</Link>
+              <a href="#jobs" className="pillar-tag">Browse Roles &rarr;</a>
             </div>
           </div>
         </div>
       </section>
 
       {/* ==========================================================
-          4. RESUME TEMPLATES GALLERY
-          ========================================================== */}
-      <section className="section" id="templates">
+           4. RESUME BUILDER SECTION
+           ========================================================== */}
+      <section className="section" id="resume">
+        <div className="container feature-split-layout">
+          <div className="feature-text-side">
+            <span className="eyebrow">PROFESSIONAL RESUME BUILDER</span>
+            <h2 className="section-title">Build a resume you're proud of.</h2>
+            <p className="section-desc">
+              Start from a professional template, add your experience, skills and projects, and create a resume designed for the role you want — without needing prior design knowledge.
+            </p>
+
+            <ul className="feature-bullet-list">
+              <li className="feature-bullet-item">
+                <div><strong>Beginner-Friendly Flow:</strong> Step-by-step guidance for education, projects, skills, and certifications.</div>
+              </li>
+              <li className="feature-bullet-item">
+                <div><strong>Impact Bullet Suggestions:</strong> Turn basic task descriptions into quantified achievements.</div>
+              </li>
+              <li className="feature-bullet-item">
+                <div><strong>1-Click Export:</strong> Download PDF and Word versions formatted strictly for modern ATS parsers.</div>
+              </li>
+            </ul>
+
+            <Link to="/builder/new" className="btn btn-primary">Build My Resume &rarr;</Link>
+          </div>
+
+          <div className="feature-visual-side">
+            <div className="ui-sheet-card">
+              <div className="resume-mock-paper">
+                <div className="resume-header-row">
+                  <div className="resume-name-block">
+                    <h4>Rahul Sharma</h4>
+                    <div className="resume-role-sub">Computer Science & Engineering &bull; Final Year</div>
+                    <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>
+                      rahul.sharma@example.edu &bull; github.com/rahul-dev &bull; linkedin.com/in/rahulsharma
+                    </div>
+                  </div>
+                  <div className="resume-ats-stamp">ATS Score: 92/100</div>
+                </div>
+
+                <div className="resume-section-title">Education</div>
+                <div className="resume-item-row">
+                  <span>B.Tech in Computer Science & Engineering</span>
+                  <span style={{ fontSize: "12px", color: "var(--muted)" }}>2022 – 2026</span>
+                </div>
+                <div className="resume-item-desc">CGPA: 8.8 / 10.0 &bull; Relevant Coursework: Data Structures, OS, Database Systems, Computer Networks.</div>
+
+                <div className="resume-section-title">Technical Projects</div>
+                <div className="resume-item-row">
+                  <span>Real-Time Collaborative Code Editor</span>
+                  <span style={{ fontSize: "12px", color: "var(--muted)" }}>Node.js, WebSockets, React</span>
+                </div>
+                <div className="resume-item-desc">
+                  &bull; Built operational transformation sync enabling 50+ concurrent users with sub-30ms latency.<br />
+                  &bull; Integrated automated Dockerized code execution sandbox supporting Python and C++.
+                </div>
+
+                <div className="resume-section-title">Skills & Competencies</div>
+                <div style={{ fontSize: "12px", color: "var(--text)", marginTop: "4px" }}>
+                  <strong>Languages:</strong> C++, Java, JavaScript, Python, SQL<br />
+                  <strong>Frameworks:</strong> React, Express, Spring Boot, TailwindCSS<br />
+                  <strong>Tools:</strong> Git, Docker, Postman, Linux, GitHub Actions
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           5. RESUME TEMPLATES GALLERY
+           ========================================================== */}
+      <section className="section section-mist" id="templates">
         <div className="container">
           <div className="section-header text-center">
             <span className="eyebrow">CURATED TEMPLATES</span>
@@ -371,29 +447,10 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-          5. RESUME + JOB DESCRIPTION MATCHING DEMO
-          ========================================================== */}
-      <section className="section section-mist" id="matching">
-        <div className="container feature-split-layout">
-          <div className="feature-text-side">
-            <span className="eyebrow">INTELLIGENT OPTIMIZATION</span>
-            <h2 className="section-title">Make your resume match the opportunity.</h2>
-            <p className="section-desc">
-              Upload your resume alongside any job description. FreeGraduates instantly maps keyword overlap, identifies missing technical competencies, and suggests actionable phrasing adjustments.
-            </p>
-
-            <ul className="feature-bullet-list">
-              <li class="feature-bullet-item">
-                <div><strong>Missing Keyword Detection:</strong> Never miss essential tools or industry terminology.</div>
-              </li>
-              <li class="feature-bullet-item">
-                <div><strong>Contextual Alignment:</strong> Pinpoints whether your bullets reflect the seniority requested.</div>
-              </li>
-            </ul>
-
-            <a href="#ats-scanner" className="btn btn-primary">Analyze My Match</a>
-          </div>
-
+           6. RESUME + JOB DESCRIPTION MATCHING DEMO
+           ========================================================== */}
+      <section className="section" id="matching">
+        <div className="container feature-split-layout reversed">
           <div className="feature-visual-side">
             <div className="matching-interactive-card">
               <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
@@ -429,14 +486,34 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          <div className="feature-text-side">
+            <span className="eyebrow">INTELLIGENT OPTIMIZATION</span>
+            <h2 className="section-title">Make your resume match the opportunity.</h2>
+            <p className="section-desc">
+              Upload your resume alongside any job description. FreeGraduates instantly maps keyword overlap, identifies missing technical competencies, and suggests actionable phrasing adjustments.
+            </p>
+
+            <a href="#ats-scanner" className="btn btn-secondary">Analyze My Match &rarr;</a>
+          </div>
         </div>
       </section>
 
       {/* ==========================================================
-          6. AI CAREER COACH SECTION
-          ========================================================== */}
-      <section className="section" id="coach">
-        <div className="container feature-split-layout reversed">
+           7. AI CAREER COACH SECTION
+           ========================================================== */}
+      <section className="section section-mist" id="coach">
+        <div className="container feature-split-layout">
+          <div className="feature-text-side">
+            <span className="eyebrow">COMMUNICATION & GUIDANCE</span>
+            <h2 className="section-title">Improve more than your resume. Meet your AI Career Coach.</h2>
+            <p className="section-desc">
+              Great careers require confident communication. Practice introducing yourself, structuring complex thoughts, speaking clearly, and mastering professional workplace interactions.
+            </p>
+
+            <Link to="/signup" className="btn btn-primary">Practice with AI Coach &rarr;</Link>
+          </div>
+
           <div className="feature-visual-side">
             <div className="ai-coach-card-mock">
               <div className="coach-header-bar">
@@ -463,22 +540,190 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="feature-text-side">
-            <span className="eyebrow">COMMUNICATION & GUIDANCE</span>
-            <h2 className="section-title">Improve more than your resume. Meet your AI Career Coach.</h2>
+      {/* ==========================================================
+           8. AI INTERVIEW PREPARATION SECTION
+           ========================================================== */}
+      <section className="section" id="interview">
+        <div className="container">
+          <div className="section-header text-center">
+            <span className="eyebrow">REALISTIC SIMULATIONS</span>
+            <h2 className="section-title">Practice the interview before the real interview.</h2>
             <p className="section-desc">
-              Great careers require confident communication. Practice introducing yourself, structuring complex thoughts, speaking clearly, and mastering professional workplace interactions.
+              Simulate realistic technical and behavioral interview sessions configured specifically for your target role and experience level.
             </p>
+          </div>
 
-            <Link to="/signup" className="btn btn-primary">Practice with AI Coach &rarr;</Link>
+          <div className="interview-pipeline">
+            <div className="pipe-step-card">
+              <div className="pipe-step-num">1</div>
+              <div className="pipe-step-title">Select Role</div>
+              <div className="pipe-step-desc">Frontend, Backend, AI/ML, Data, or General CS.</div>
+            </div>
+            <div className="pipe-step-card">
+              <div className="pipe-step-num">2</div>
+              <div className="pipe-step-title">Add Context</div>
+              <div className="pipe-step-desc">Paste target job description and your resume.</div>
+            </div>
+            <div className="pipe-step-card">
+              <div className="pipe-step-num">3</div>
+              <div className="pipe-step-title">AI Interview</div>
+              <div className="pipe-step-desc">Dynamic follow-up questions based on your replies.</div>
+            </div>
+            <div className="pipe-step-card">
+              <div className="pipe-step-num">4</div>
+              <div className="pipe-step-title">Your Answers</div>
+              <div className="pipe-step-desc">Voice or text responses with natural pacing.</div>
+            </div>
+            <div className="pipe-step-card">
+              <div className="pipe-step-num">5</div>
+              <div className="pipe-step-title">Full Scorecard</div>
+              <div className="pipe-step-desc">Instant score breakdown and model answers.</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ==========================================================
-          7. INTEGRATED ATS CHECKER & AUDITOR
-          ========================================================== */}
+           9. PORTFOLIO BUILDER SECTION
+           ========================================================== */}
+      <section className="section section-mist" id="portfolio">
+        <div className="container feature-split-layout reversed">
+          <div className="feature-visual-side">
+            <div className="portfolio-mock-browser">
+              <div className="browser-nav-bar">
+                <div className="visual-tabs">
+                  <span className="visual-tab-dot dot-red"></span>
+                  <span className="visual-tab-dot dot-yellow"></span>
+                  <span className="visual-tab-dot dot-green"></span>
+                </div>
+                <div className="browser-url-pill">freegraduates.com/p/ananya-sharma</div>
+              </div>
+
+              <div className="portfolio-body-mock">
+                <div className="portfolio-hero-mock">
+                  <div className="port-avatar">AS</div>
+                  <div>
+                    <div className="port-name">Ananya Sharma</div>
+                    <div className="port-role">Fullstack Developer &bull; Open Source Contributor</div>
+                    <div style={{ fontSize: "11px", color: "var(--muted)" }}>Bengaluru, India &bull; Available for 2026 Roles</div>
+                  </div>
+                </div>
+
+                <div className="port-projects-grid">
+                  <div className="port-project-card">
+                    <div className="port-proj-title">DevPulse API Gateway</div>
+                    <p className="port-proj-desc">High-throughput microservices gateway built with Go and Redis.</p>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--primary)" }}>View Code &bull; Live Demo</div>
+                  </div>
+
+                  <div className="port-project-card">
+                    <div className="port-proj-title">NeuralSearch Engine</div>
+                    <p className="port-proj-desc">Semantic document search engine using FastAPI and vector embeddings.</p>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--primary)" }}>View Code &bull; Live Demo</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="feature-text-side">
+            <span className="eyebrow">SHOWCASE YOUR WORK</span>
+            <h2 className="section-title">Turn your work into your portfolio.</h2>
+            <p className="section-desc">
+              Students and fresh graduates often build fantastic projects during coursework or hackathons but don't know how to present them. FreeGraduates turns your repositories into an impressive personal website.
+            </p>
+
+            <Link to="/signup" className="btn btn-primary">Build My Portfolio &rarr;</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           10. JOBS & INTERNSHIPS DISCOVERY PREVIEW
+           ========================================================== */}
+      <section className="section" id="jobs">
+        <div className="container">
+          <div className="section-header text-center">
+            <span className="eyebrow">OPPORTUNITY HUB</span>
+            <h2 className="section-title">Find opportunities that move you forward.</h2>
+            <p className="section-desc">
+              Discover verified entry-level roles, graduate engineering programs, and high-impact internships matched directly with your skills.
+            </p>
+          </div>
+
+          <div className="jobs-preview-grid">
+            <div className="job-card">
+              <div>
+                <div className="job-card-top">
+                  <div>
+                    <div className="job-role-title">Associate Software Engineer</div>
+                    <div className="job-company">CloudScale Technologies</div>
+                  </div>
+                  <span className="job-type-pill">Full-Time</span>
+                </div>
+                <div className="job-tags-row">
+                  <span className="mock-tag">Java</span>
+                  <span className="mock-tag">Spring Boot</span>
+                  <span className="mock-tag">PostgreSQL</span>
+                </div>
+              </div>
+              <div className="job-meta-row">
+                <span>📍 Bengaluru / Hybrid</span>
+                <span>Fresh Graduates 2026</span>
+              </div>
+            </div>
+
+            <div className="job-card">
+              <div>
+                <div className="job-card-top">
+                  <div>
+                    <div className="job-role-title">Junior AI/ML Engineer</div>
+                    <div className="job-company">Nexus Intelligence</div>
+                  </div>
+                  <span className="job-type-pill">Full-Time</span>
+                </div>
+                <div className="job-tags-row">
+                  <span className="mock-tag">Python</span>
+                  <span className="mock-tag">PyTorch</span>
+                  <span className="mock-tag">FastAPI</span>
+                </div>
+              </div>
+              <div className="job-meta-row">
+                <span>📍 Remote</span>
+                <span>0-1 yrs exp</span>
+              </div>
+            </div>
+
+            <div className="job-card">
+              <div>
+                <div className="job-card-top">
+                  <div>
+                    <div className="job-role-title">Frontend Engineering Intern</div>
+                    <div className="job-company">Starlight Studio</div>
+                  </div>
+                  <span className="job-type-pill">Internship</span>
+                </div>
+                <div className="job-tags-row">
+                  <span className="mock-tag">React</span>
+                  <span className="mock-tag">TypeScript</span>
+                  <span className="mock-tag">Tailwind</span>
+                </div>
+              </div>
+              <div className="job-meta-row">
+                <span>📍 Hyderabad / On-site</span>
+                <span>Final Year Students</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           11. INTEGRATED ATS CHECKER & AUDITOR
+           ========================================================== */}
       <section className="section section-mist" id="ats-scanner">
         <div className="container">
           <div className="section-header text-center">
@@ -518,8 +763,89 @@ export default function Home() {
       </section>
 
       {/* ==========================================================
-          8. FOOTER
-          ========================================================== */}
+           12. CAREER JOURNEY TIMELINE
+           ========================================================== */}
+      <section className="section" id="journey">
+        <div className="container">
+          <div className="section-header text-center">
+            <span className="eyebrow">YOUR STEP-BY-STEP PATHWAY</span>
+            <h2 className="section-title">The Complete Career Journey</h2>
+            <p className="section-desc">
+              A clear, structured 7-step path to move from initial preparation to receiving your offer letter.
+            </p>
+          </div>
+
+          <div className="journey-timeline-wrapper">
+            <div className="journey-step-node">
+              <span className="step-num-pill">01 &bull; BUILD</span>
+              <div className="step-node-title">Create Resume</div>
+              <div className="step-node-desc">Draft clean sections with guided templates.</div>
+            </div>
+
+            <div className="journey-step-node">
+              <span className="step-num-pill">02 &bull; CHECK</span>
+              <div className="step-node-title">ATS Audit</div>
+              <div className="step-node-desc">Verify readability & formatting compliance.</div>
+            </div>
+
+            <div className="journey-step-node">
+              <span className="step-num-pill">03 &bull; IMPROVE</span>
+              <div className="step-node-title">Match JD</div>
+              <div className="step-node-desc">Align keywords to specific role requirements.</div>
+            </div>
+
+            <div className="journey-step-node">
+              <span className="step-num-pill">04 &bull; PRACTICE</span>
+              <div className="step-node-title">AI Coaching</div>
+              <div className="step-node-desc">Strengthen vocabulary & elevator pitches.</div>
+            </div>
+
+            <div className="journey-step-node">
+              <span className="step-num-pill">05 &bull; INTERVIEW</span>
+              <div className="step-node-title">Mock Rounds</div>
+              <div className="step-node-desc">Simulate realistic tech and HR scenarios.</div>
+            </div>
+
+            <div className="journey-step-node">
+              <span className="step-num-pill">06 &bull; SHOWCASE</span>
+              <div className="step-node-title">Build Portfolio</div>
+              <div className="step-node-desc">Publish your projects on a custom site.</div>
+            </div>
+
+            <div className="journey-step-node">
+              <span className="step-num-pill">07 &bull; DISCOVER</span>
+              <div className="step-node-title">Land Offers</div>
+              <div className="step-node-desc">Apply confidently to vetted opportunities.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           13. FINAL CALL TO ACTION
+           ========================================================== */}
+      <section className="final-cta-section">
+        <div className="container">
+          <div className="final-cta-box">
+            <h2 className="final-cta-title">Your next opportunity starts with preparation.</h2>
+            <p className="final-cta-desc">
+              Build better. Practice smarter. Apply with confidence.
+            </p>
+            <div className="final-btn-group">
+              <Link to="/signup" className="btn btn-primary btn-lg">
+                Get Started Free &rarr;
+              </Link>
+              <a href="#journey" className="btn btn-secondary btn-lg">
+                Explore FreeGraduates
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================================
+           14. FOOTER
+           ========================================================== */}
       <footer className="landing-site-footer">
         <div className="container footer-content-wrapper">
           <div className="footer-brand-column">
