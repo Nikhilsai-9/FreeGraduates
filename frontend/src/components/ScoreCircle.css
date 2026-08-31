@@ -1,0 +1,59 @@
+.score-circle-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.score-circle-svg {
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.score-track {
+  fill: none;
+  stroke: var(--surface-alt);
+}
+
+.score-progress {
+  fill: none;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease;
+}
+
+.score-content {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.score-number {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.score-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+.score-high .score-number {
+  color: var(--success);
+}
+
+.score-mid .score-number {
+  color: var(--warning);
+}
+
+.score-low .score-number {
+  color: var(--danger);
+}
