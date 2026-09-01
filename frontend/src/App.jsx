@@ -1,63 +1,142 @@
-import React from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import React, { useState } from "react";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
+import DashboardView from "./components/DashboardView";
+import ResumeBuilderView from "./components/ResumeBuilderView";
+import ResumeAnalyzerView from "./components/ResumeAnalyzerView";
 import Home from "./pages/Home";
-import Results from "./pages/Results";
-import History from "./pages/History";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-import Onboarding from "./pages/Onboarding";
-import Builder from "./pages/Builder";
+import History from "./pages/History";
+import Results from "./pages/Results";
 import "./App.css";
 
-export default function App() {
-  const location = useLocation();
-  const isDashboard = location.pathname === "/dashboard";
+// Unified Authenticated Workspace Layout
+function AuthenticatedWorkspace() {
+  const { currentUser, logout } = useAuth();
+  const [activeView, setActiveView] = useState("dashboard"); // 'dashboard' | 'builder' | 'analyzer' | 'ats-checker' | 'coach' | 'history'
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <AuthProvider>
-      <div className="app-layout">
-        {!isDashboard && <Navbar />}
-        <main className="main-content">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/results/:id" element={<Results />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+    <div className={`unified-app-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
+      {/* 1. Left Collapsible Sidebar */}
+      <Sidebar
+        activeView={activeView}
+        setActiveView={setActiveView}
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        onLogout={logout}
+      />
 
-            {/* Protected Routes (Firebase Auth) */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
+      {/* 2. Main Right Container */}
+      <div className="unified-main-wrapper">
+        {/* Top Header with 3-line Hamburger Menu */}
+        <Header
+          activeView={activeView}
+          setActiveView={setActiveView}
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          currentUser={currentUser}
+          onLogout={logout}
+        />
+
+        {/* View Switcher Container */}
+        <main className="unified-view-content-area">
+          {activeView === "dashboard" && (
+            <DashboardView
+              currentUser={currentUser}
+              setActiveView={setActiveView}
             />
-            <Route
-              path="/builder/new"
-              element={
-                <ProtectedRoute>
-                  <Onboarding />
-                </ProtectedRoute>
-              }
+          )}
+
+          {activeView === "builder" && (
+            <ResumeBuilderView
+              onBackToDashboard={() => setActiveView("dashboard")}
             />
-            <Route
-              path="/builder/:id"
-              element={
-                <ProtectedRoute>
-                  <Builder />
-                </ProtectedRoute>
-              }
+          )}
+
+          {activeView === "analyzer" && (
+            <ResumeAnalyzerView
+              onBackToDashboard={() => setActiveView("dashboard")}
             />
-          </Routes>
+          )}
+
+          {activeView === "ats-checker" && (
+            <ResumeAnalyzerView
+              onBackToDashboard={() => setActiveView("dashboard")}
+            />
+          )}
+
+          {activeView === "coach" && (
+            <div className="coach-placeholder-panel">
+              <div className="coach-inner-box">
+                <div className="badge-pill">AI CAREER COACH & TOOLS</div>
+                <h2>Interactive STAR Interview Simulator & Behavioral Guidance</h2>
+                <p>
+                  Practice engineering behavioral questions, salary negotiation, and system design prompts with real-time feedback.
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary-action"
+                  onClick={() => setActiveView("builder")}
+                >
+                  Return to Resume Builder
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeView === "history" && (
+            <div className="history-embedded-container">
+              <History />
+            </div>
+          )}
         </main>
       </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Routes>
+        {/* Public Landing Page & Auth */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/results/:id" element={<Results />} />
+        <Route path="/history" element={<History />} />
+
+        {/* Protected Unified Dashboard Workspace */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/builder/new"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/builder/:id"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </AuthProvider>
   );
 }
