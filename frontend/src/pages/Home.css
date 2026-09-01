@@ -64,8 +64,18 @@
   font-family: var(--font-primary);
   color: var(--color-ink);
   background-color: var(--color-paper);
-  overflow-x: hidden;
   line-height: 1.5;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* === CONTAINER: the critical layout wrapper for all sections === */
+.container {
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin-inline: auto;
+  padding-inline: 24px;
+  box-sizing: border-box;
 }
 
 /* Base Sections */
@@ -213,8 +223,8 @@
 
 .hero-content-grid {
   display: grid;
-  grid-template-columns: 1.15fr 0.95fr;
-  gap: 56px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+  gap: 40px;
   align-items: center;
 }
 
@@ -254,12 +264,14 @@
 }
 
 .hero-title {
-  font-size: 56px;
+  font-size: clamp(32px, 5vw, 56px);
   line-height: 1.06;
   letter-spacing: -0.03em;
   font-weight: 900;
   color: var(--color-carbon);
   margin-bottom: 20px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .hero-description {
@@ -312,6 +324,8 @@
   box-shadow: var(--shadow-card);
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .hero-visual-card:hover {
@@ -364,9 +378,9 @@
 
 .hero-dashboard-preview {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  padding: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
   background-color: #fafbfc;
 }
 
@@ -584,7 +598,7 @@
    ========================================================== */
 .value-grid-6 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
   margin-top: 48px;
 }
@@ -668,13 +682,13 @@
    ========================================================== */
 .feature-split-layout {
   display: grid;
-  grid-template-columns: 1.05fr 1fr;
-  gap: 56px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 40px;
   align-items: center;
 }
 
 .feature-split-layout.reversed {
-  grid-template-columns: 1fr 1.05fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
 }
 
 .feature-bullet-list {
@@ -825,7 +839,7 @@
 
 .templates-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 28px;
 }
 
@@ -937,7 +951,7 @@
 
 .matching-cols {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -1140,7 +1154,7 @@
    ========================================================== */
 .interview-pipeline {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 48px;
 }
@@ -1189,7 +1203,7 @@
 
 .interview-feedback-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 
@@ -1240,8 +1254,8 @@
    ========================================================== */
 .ats-breakdown-wrapper {
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 48px;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  gap: 40px;
   align-items: center;
 }
 
@@ -1460,7 +1474,7 @@
    ========================================================== */
 .jobs-preview-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
   margin-bottom: 24px;
 }
@@ -1539,7 +1553,7 @@
    ========================================================== */
 .audience-grid-4 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
@@ -1593,7 +1607,7 @@
 
 .placement-checklist-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 
@@ -1643,7 +1657,7 @@
 
 .os-pillars {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 32px;
   margin-block: 36px;
   text-align: left;
@@ -1679,7 +1693,7 @@
 /* Timeline */
 .journey-timeline-wrapper {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1781,7 +1795,7 @@
 
 .footer-top-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 40px;
   padding-bottom: 48px;
 }
@@ -1840,6 +1854,37 @@
 /* ==========================================================
    RESPONSIVE QUERIES
    ========================================================== */
+
+/* Ensure images, SVGs, videos never exceed their container */
+img, svg, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Large desktop: tighten gaps */
+@media (max-width: 1280px) {
+  .hero-content-grid {
+    gap: 32px;
+  }
+
+  .feature-split-layout,
+  .feature-split-layout.reversed {
+    gap: 32px;
+  }
+
+  .interview-pipeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .journey-timeline-wrapper {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .audience-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1024px) {
   .hero-content-grid,
   .feature-split-layout,
@@ -1852,11 +1897,15 @@
   .templates-gallery-grid,
   .jobs-preview-grid,
   .interview-feedback-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .interview-pipeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .journey-timeline-wrapper {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .ats-breakdown-wrapper {
@@ -1866,15 +1915,55 @@
   .footer-top-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .placement-checklist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .os-pillars {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .social-proof-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .social-proof-logos {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding-inline: 16px;
+  }
+
+  .section {
+    padding-block: 48px;
+  }
+
+  .hero-section {
+    padding-top: 32px;
+    padding-bottom: 48px;
+  }
+
   .hero-title {
-    font-size: 40px;
+    font-size: clamp(28px, 7vw, 40px);
+  }
+
+  .hero-description {
+    font-size: 16px;
   }
 
   .section-title {
-    font-size: 30px;
+    font-size: clamp(24px, 5vw, 30px);
+  }
+
+  .section-desc {
+    font-size: 16px;
   }
 
   .value-grid-6,
@@ -1892,14 +1981,79 @@
   }
 
   .journey-timeline-wrapper {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .placement-prep-box {
     padding: 24px;
   }
 
+  .open-source-banner {
+    padding: 32px 20px;
+  }
+
   .footer-top-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-cta-group .btn {
+    text-align: center;
+    justify-content: center;
+  }
+
+  .hero-trust-badges {
+    gap: 16px;
+  }
+
+  .final-cta-box {
+    padding: 40px 20px;
+  }
+
+  .final-cta-title {
+    font-size: clamp(24px, 6vw, 36px);
+  }
+
+  .filter-pill {
+    font-size: 13px;
+    padding: 8px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-inline: 12px;
+  }
+
+  .hero-badge-pill {
+    font-size: 11px;
+    padding: 4px 12px;
+  }
+
+  .btn-lg {
+    padding: 13px 24px;
+    font-size: 15px;
+  }
+
+  .social-proof-logos {
+    gap: 8px;
+  }
+
+  .college-logo-item {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  .journey-timeline-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-bottom-bar {
+    flex-direction: column;
+    text-align: center;
   }
 }
