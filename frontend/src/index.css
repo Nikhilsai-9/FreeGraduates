@@ -374,6 +374,13 @@ body {
   justify-content: center;
 }
 
+/* Profile photo avatar (overrides background when photo exists) */
+img.avatar-circle.avatar-img {
+  object-fit: cover;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-border-subtle);
+}
+
 .profile-name-text {
   font-size: 13px;
   font-weight: 700;

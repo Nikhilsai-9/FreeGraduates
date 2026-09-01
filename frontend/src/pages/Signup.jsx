@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Toast from "../components/Toast";
+import Logo from "../components/Logo";
 import "./Login.css"; // Shares auth styling
 
 export default function Signup() {
@@ -66,12 +67,7 @@ export default function Signup() {
       <div className="auth-card-box">
         <div className="auth-header">
           <div className="auth-brand-logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="8.5" cy="7" r="4" />
-              <line x1="20" y1="8" x2="20" y2="14" />
-              <line x1="17" y1="11" x2="23" y2="11" />
-            </svg>
+            <Logo showWordmark={false} size={32} />
           </div>
           <h2>Create Free Account</h2>
           <p>Join FreeGraduates to build resumes, practice interviews & get hired.</p>

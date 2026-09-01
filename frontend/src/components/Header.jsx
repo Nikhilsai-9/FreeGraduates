@@ -22,6 +22,7 @@ export default function Header({
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [avatarImgError, setAvatarImgError] = useState(false);
 
   const profileRef = useRef(null);
   const notifRef = useRef(null);
@@ -38,6 +39,11 @@ export default function Header({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Reset image error state when user changes (e.g. login/logout)
+  useEffect(() => {
+    setAvatarImgError(false);
+  }, [currentUser?.uid]);
 
   const titles = {
     dashboard: "Career Dashboard",
@@ -60,6 +66,16 @@ export default function Header({
     }
     return "FG";
   };
+
+  // Firebase Auth provides photoURL for Google OAuth and manual profile updates
+  const getUserPhotoURL = () => {
+    if (!currentUser) return null;
+    const url = currentUser.photoURL || currentUser.avatar || currentUser.profileImage || null;
+    if (!url || typeof url !== "string" || url.trim() === "") return null;
+    return url;
+  };
+
+  const photoURL = getUserPhotoURL();
 
   const notifications = [
     {
@@ -150,7 +166,17 @@ export default function Header({
             onClick={() => setProfileOpen(!profileOpen)}
             aria-label="User Menu"
           >
-            <div className="avatar-circle">{getUserInitials()}</div>
+            {photoURL && !avatarImgError ? (
+              <img
+                src={photoURL}
+                alt={currentUser?.displayName || "Profile"}
+                className="avatar-circle avatar-img"
+                onError={() => setAvatarImgError(true)}
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="avatar-circle">{getUserInitials()}</div>
+            )}
             <span className="profile-name-text">
               {currentUser?.displayName || currentUser?.email?.split("@")[0] || "Member"}
             </span>

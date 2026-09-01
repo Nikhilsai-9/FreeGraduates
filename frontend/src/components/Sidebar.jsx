@@ -8,9 +8,9 @@ import {
   History,
   LogOut,
   ChevronLeft,
-  ChevronRight,
-  Briefcase
+  ChevronRight
 } from "lucide-react";
+import Logo from "./Logo";
 
 export default function Sidebar({
   activeView,
@@ -37,14 +37,7 @@ export default function Sidebar({
           className="brand-logo-button"
           onClick={() => setActiveView("dashboard")}
         >
-          <div className="brand-logo-icon">
-            <Briefcase size={20} strokeWidth={2.4} />
-          </div>
-          {!collapsed && (
-            <div className="brand-logo-text">
-              Free<span>Graduates</span>
-            </div>
-          )}
+          <Logo showWordmark={!collapsed} size={36} />
         </button>
       </div>
 
