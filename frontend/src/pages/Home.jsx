@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Navbar from "../components/Navbar";
 import FileUpload from "../components/FileUpload";
 import JDInput from "../components/JDInput";
 import Loader from "../components/Loader";
@@ -200,6 +201,9 @@ export default function Home() {
     <div className="landing-page-root">
       <Loader active={loading} />
       <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage("")} />
+
+      {/* Public Landing Page Sticky Header */}
+      <Navbar />
 
       <main role="main">
         {/* ==========================================================
