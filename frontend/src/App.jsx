@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
@@ -14,10 +14,13 @@ import Builder from "./pages/Builder";
 import "./App.css";
 
 export default function App() {
+  const location = useLocation();
+  const isDashboard = location.pathname === "/dashboard";
+
   return (
     <AuthProvider>
       <div className="app-layout">
-        <Navbar />
+        {!isDashboard && <Navbar />}
         <main className="main-content">
           <Routes>
             {/* Public Routes */}

@@ -4,32 +4,53 @@
    ========================================================== */
 
 :root {
-  /* Colors */
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
+  /* FreeGraduates Brand Tokens */
+  --color-ink: #1e2532;
+  --color-carbon: #0f141e;
+  --color-pencil: #656e83;
+  --color-fog: #828ba2;
+  --color-haze: #9fa6bb;
+  --color-paper: #ffffff;
+  --color-mist: #f7f9fc;
+  --color-lavender-wash: #f1f2ff;
+  --color-chalk: #d9deeb;
+  --color-ash: #e7eaf4;
+  --color-signal-blue: #1a91f0;
+  --color-deep-signal: #016fd0;
+  --color-iris: #5660e8;
+  --color-midnight: #1a1c6a;
+  --color-mint-whisper: #e7f4ed;
+  --color-mint-text: #0d7844;
+  --color-blush-whisper: #ffebe4;
+  --color-blush-text: #b83d1b;
+  --color-rose-whisper: #edd7df;
+
+  /* App Colors */
+  --primary: #1a91f0;
+  --primary-hover: #016fd0;
+  --primary-light: #f1f2ff;
   --primary-border: #bfdbfe;
 
-  --bg: #f8fafc;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-alt: #f1f5f9;
+  --surface-alt: #f7f9fc;
 
-  --text: #0f172a;
-  --text-secondary: #334155;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --border-dark: #cbd5e1;
+  --text: #1e2532;
+  --text-secondary: #656e83;
+  --muted: #828ba2;
+  --border: #e7eaf4;
+  --border-dark: #d9deeb;
 
-  --success: #16a34a;
-  --success-light: #f0fdf4;
+  --success: #0d7844;
+  --success-light: #e7f4ed;
   --success-border: #bbf7d0;
 
   --warning: #d97706;
   --warning-light: #fffbeb;
   --warning-border: #fde68a;
 
-  --danger: #dc2626;
-  --danger-light: #fef2f2;
+  --danger: #b83d1b;
+  --danger-light: #ffebe4;
   --danger-border: #fecaca;
 
   /* Typography */
@@ -40,13 +61,14 @@
   --radius-sm: 6px;
   --radius: 12px;
   --radius-lg: 18px;
+  --radius-buttons: 36px;
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 20, 30, 0.05);
+  --shadow: 0 4px 12px -1px rgba(15, 20, 30, 0.06), 0 2px 4px -2px rgba(15, 20, 30, 0.04);
+  --shadow-md: 0 10px 25px -3px rgba(15, 20, 30, 0.08), 0 4px 6px -4px rgba(15, 20, 30, 0.04);
+  --shadow-lg: 0 20px 35px -5px rgba(26, 145, 240, 0.12), 0 8px 10px -6px rgba(15, 20, 30, 0.04);
 
   /* Transitions */
   --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
