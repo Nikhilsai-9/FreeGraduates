@@ -72,7 +72,7 @@ const TEMPLATES_LIST = [
     target: "Target: AI/ML, Data Analyst, Research",
     templateKey: "modern"
   }
-};
+];
 
 const COACH_TOPICS = {
   introduce: "Coach: Use the Present-Past-Future formula! 1) Present degree & focus, 2) 1-2 major technical project outcomes, 3) Why this specific engineering role excites you.",
