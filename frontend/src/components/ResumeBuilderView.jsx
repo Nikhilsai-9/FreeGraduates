@@ -48,15 +48,15 @@ const LinkedInIcon = ({ size = 16, className = "" }) => (
   </svg>
 );
 
-export default function ResumeBuilderView({ onBackToDashboard }) {
+export default function ResumeBuilderView({ onBackToDashboard, initialOptions }) {
   // Saved versions & active resume state
   const [savedResumes, setSavedResumes] = useState([]);
   const [resumeData, setResumeData] = useState(DEFAULT_RESUME_SCHEMA);
   
   // Navigation & Pathway States
-  const [creationPath, setCreationPath] = useState("form"); // 'form' | 'linkedin' | 'upload'
+  const [creationPath, setCreationPath] = useState(initialOptions?.creationPath || "form"); // 'form' | 'linkedin' | 'upload'
   const [activeTab, setActiveTab] = useState("personal"); // 'personal' | 'experience' | 'education' | 'skills' | 'projects' | 'certifications' | 'awards'
-  const [templateStyle, setTemplateStyle] = useState("classic"); // 'classic' | 'professional' | 'modern' | 'minimal'
+  const [templateStyle, setTemplateStyle] = useState(initialOptions?.templateStyle || "classic"); // 'classic' | 'professional' | 'modern' | 'minimal'
 
   // Job Description Tailoring States
   const [showJdPanel, setShowJdPanel] = useState(false);
@@ -76,15 +76,34 @@ export default function ResumeBuilderView({ onBackToDashboard }) {
 
   const previewRef = useRef(null);
 
-  // Load saved drafts on mount
+  // Load saved drafts on mount or when initialOptions updates
   useEffect(() => {
     const list = getSavedResumes();
     setSavedResumes(list);
+
+    if (initialOptions?.resumeId) {
+      const match = list.find((r) => r.id === initialOptions.resumeId);
+      if (match) {
+        setResumeData(match);
+        if (match.templateStyle) setTemplateStyle(match.templateStyle);
+        return;
+      }
+    }
+
     if (list.length > 0) {
       setResumeData(list[0]);
-      if (list[0].templateStyle) setTemplateStyle(list[0].templateStyle);
+      if (list[0].templateStyle && !initialOptions?.templateStyle) {
+        setTemplateStyle(list[0].templateStyle);
+      }
     }
-  }, []);
+
+    if (initialOptions?.creationPath) {
+      setCreationPath(initialOptions.creationPath);
+    }
+    if (initialOptions?.templateStyle) {
+      setTemplateStyle(initialOptions.templateStyle);
+    }
+  }, [initialOptions]);
 
   // Save current resume draft
   const handleSave = () => {

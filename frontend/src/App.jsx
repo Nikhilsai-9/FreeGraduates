@@ -19,6 +19,20 @@ function AuthenticatedWorkspace() {
   const { currentUser, logout } = useAuth();
   const [activeView, setActiveView] = useState("dashboard"); // 'dashboard' | 'builder' | 'analyzer' | 'ats-checker' | 'coach' | 'history'
   const [collapsed, setCollapsed] = useState(false);
+  const [builderOptions, setBuilderOptions] = useState({
+    resumeId: null,
+    creationPath: "form",
+    templateStyle: "classic"
+  });
+
+  const handleLaunchBuilder = (options = {}) => {
+    setBuilderOptions({
+      resumeId: options.resumeId || null,
+      creationPath: options.creationPath || "form",
+      templateStyle: options.templateStyle || "classic"
+    });
+    setActiveView("builder");
+  };
 
   return (
     <div className={`unified-app-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
@@ -49,12 +63,14 @@ function AuthenticatedWorkspace() {
             <DashboardView
               currentUser={currentUser}
               setActiveView={setActiveView}
+              onLaunchBuilder={handleLaunchBuilder}
             />
           )}
 
           {activeView === "builder" && (
             <ResumeBuilderView
               onBackToDashboard={() => setActiveView("dashboard")}
+              initialOptions={builderOptions}
             />
           )}
 
