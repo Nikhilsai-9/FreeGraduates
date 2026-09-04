@@ -49,11 +49,16 @@ export const resumeApi = {
   },
 
   // ---------- PDF upload + extraction ----------
+  // IMPORTANT: do NOT set Content-Type manually for FormData uploads.
+  // When you pass FormData, the browser/axios must auto-generate the
+  // `boundary=...` parameter; hardcoding `multipart/form-data` without a
+  // boundary makes python-multipart reject the body as unparseable,
+  // which previously surfaced to the user as
+  //   "We couldn't read this file. Please try another PDF."
   extract: async (file) => {
     const form = new FormData();
     form.append("file", file);
     const response = await api.post("/api/resume/extract", form, {
-      headers: { "Content-Type": "multipart/form-data" },
       timeout: 120000,
     });
     return response.data;

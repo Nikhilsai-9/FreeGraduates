@@ -58,20 +58,120 @@ def _job_target_to_model(job):
 
 @router.post("/extract", response_model=ExtractPdfResponse)
 async def extract_pdf(file: UploadFile = File(...), user: AuthUser = Depends(get_current_user)):
-    """Extract candidate data from a PDF (LinkedIn export or existing resume)."""
-    if file.content_type not in ("application/pdf", "application/octet-stream"):
-        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Only PDF files are supported.")
+    """Extract candidate data from a PDF (LinkedIn export or existing resume).
+
+    Failure modes are categorised so the frontend can show a precise message:
+
+    * 415 - Wrong MIME (not a PDF at all)
+    * 413 - File too large
+    * 422 - PDF is valid but we couldn't extract any readable text
+            (scanned PDF, image-only, corrupted)
+    * 500 - Unexpected server-side error (we log the full traceback)
+
+    Every stage logs so a failure is easy to localise in the terminal.
+    """
     settings = get_settings()
+
+    # ----- Stage 1: MIME validation -----
+    logger.info(
+        "PDF extract request: uid=%s filename=%r content_type=%s",
+        user.uid, file.filename, file.content_type,
+    )
+    if file.content_type not in ("application/pdf", "application/octet-stream"):
+        logger.warning("PDF extract rejected: bad content_type=%s", file.content_type)
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Only PDF files are supported.",
+        )
+
+    # ----- Stage 2: Read + size validation -----
     pdf_bytes = await file.read()
+    logger.info("PDF extract: received %d bytes", len(pdf_bytes))
+    if not pdf_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The uploaded file is empty.",
+        )
     if len(pdf_bytes) > settings.max_upload_bytes:
-        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"File too large. Max {settings.max_upload_bytes // (1024 * 1024)} MB.")
+        logger.warning(
+            "PDF extract rejected: %d bytes > limit %d",
+            len(pdf_bytes), settings.max_upload_bytes,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large. Max {settings.max_upload_bytes // (1024 * 1024)} MB.",
+        )
+
+    # Lightweight magic-number sniff: a real PDF starts with "%PDF-".
+    # This catches "I renamed a .docx to .pdf" uploads before we hand them
+    # to the parser.
+    if not pdf_bytes.startswith(b"%PDF-"):
+        logger.warning("PDF extract rejected: %s does not have PDF magic header", file.filename)
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="That file doesn't look like a PDF. Please upload a real .pdf resume.",
+        )
+
+    # ----- Stage 3: Text / AI extraction -----
     llm = get_llm() if _llm_is_runnable() else None
     try:
-        parsed = extract_candidate_from_pdf(pdf_bytes, poppler_path=settings.poppler_path or None, llm=llm)
+        parsed = extract_candidate_from_pdf(
+            pdf_bytes,
+            poppler_path=settings.poppler_path or None,
+            llm=llm,
+        )
     except Exception as exc:
-        logger.exception("PDF extraction failed: %s", exc)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="We couldn't read this file. Please try another PDF.") from exc
+        # Genuine extraction crash (corrupted PDF, parser bug, etc.).
+        logger.exception("PDF extraction crashed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="We couldn't read this PDF. It may be corrupted or password-protected.",
+        ) from exc
+
+    # ----- Stage 4: Validate we actually got something useful -----
+    pi = parsed.get("personal_info") or {}
+    has_anything = bool(
+        pi.get("fullName") or pi.get("email")
+        or (parsed.get("work_experience") or [])
+        or (parsed.get("education") or [])
+        or (parsed.get("skills") or [])
+        or (parsed.get("projects") or [])
+    )
+    if not has_anything:
+        # PDF parsed but no recognisable fields - almost always a scanned /
+        # image-only PDF without OCR, and the Gemini vision fallback isn't
+        # configured (placeholder API key).
+        logger.warning(
+            "PDF extract: parsed but no recognisable fields (filename=%s)",
+            file.filename,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "We couldn't read any text from this PDF. "
+                "If it's a scanned resume, please add a Gemini API key to enable OCR, "
+                "or paste your information manually below."
+            ),
+        )
+
+    logger.info(
+        "PDF extract OK: uid=%s filename=%s fields=%s",
+        user.uid, file.filename, _candidate_summary(parsed),
+    )
     return ExtractPdfResponse(success=True, parsed=parsed, warnings=[])
+
+
+def _candidate_summary(c: dict) -> str:
+    """Compact debug string for a parsed candidate (avoid logging full PII)."""
+    pi = c.get("personal_info") or {}
+    return (
+        f"name={'yes' if pi.get('fullName') else 'no'} "
+        f"email={'yes' if pi.get('email') else 'no'} "
+        f"exp={len(c.get('work_experience') or [])} "
+        f"edu={len(c.get('education') or [])} "
+        f"skills={len(c.get('skills') or [])} "
+        f"projects={len(c.get('projects') or [])}"
+    )
 
 
 # ---------- Routes: generate ----------
