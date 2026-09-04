@@ -44,9 +44,9 @@ class Settings(BaseSettings):
     )
     dev_auth_bypass: bool = Field(default=False)
 
-    # ---------- AI Provider ----------
-    openai_api_key: str = Field(default="")
-    openai_model: str = Field(default="gpt-4o")
+    # ---------- AI Provider (Google Gemini) ----------
+    gemini_api_key: str = Field(default="")
+    gemini_model: str = Field(default="gemini-1.5-flash")
 
     # ---------- Firebase Admin ----------
     firebase_service_account_path: str = Field(default="./firebase-service-account.json")
@@ -101,8 +101,8 @@ class Settings(BaseSettings):
         return self.data_dir_resolved / "rules"
 
     @property
-    def is_openai_configured(self) -> bool:
-        return bool(self.openai_api_key and self.openai_api_key.strip())
+    def is_gemini_configured(self) -> bool:
+        return bool(self.gemini_api_key and self.gemini_api_key.strip())
 
     @property
     def is_firebase_configured(self) -> bool:

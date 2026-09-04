@@ -8,7 +8,7 @@ The workflow runs five sequential agents:
     4. agent_resume_generator    -> calls the LLM with strict JSON schema.
     5. agent_resume_qa           -> validates data-integrity.
 
-If the OpenAI client is not configured the engine returns a deterministic
+If the Gemini client is not configured the engine returns a deterministic
 safe fallback built only from the candidate data.
 """
 
@@ -195,7 +195,7 @@ def agent_resume_generator(state: WorkflowState) -> WorkflowState:
     llm = get_llm()
     if not llm.is_available:
         state.generated = _fallback_resume(state)
-        state.warnings.append("OPENAI_API_KEY not set - returning a non-AI template generated from the supplied data only.")
+        state.warnings.append("GEMINI_API_KEY not set - returning a non-AI template generated from the supplied data only.")
         return state
 
     schema = _json_schema_for(ResumeStructured.model_json_schema())

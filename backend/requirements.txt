@@ -15,7 +15,8 @@ pydantic-settings>=2.2.0
 firebase-admin>=6.4.0
 
 # --- AI / LangGraph workflow ---
-openai>=1.12.0
+# Google Gemini is the active LLM provider.
+google-genai>=1.0.0
 langgraph>=0.0.1
 langchain-core>=0.1.0
 

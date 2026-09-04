@@ -18,7 +18,7 @@ async def health() -> HealthResponse:
     settings = get_settings()
     return HealthResponse(
         status="ok",
-        openai_configured=settings.is_openai_configured,
+        gemini_configured=settings.is_gemini_configured,
         firebase_configured=settings.is_firebase_configured,
         model=get_llm().model,
         data_dir=str(settings.data_dir_resolved),

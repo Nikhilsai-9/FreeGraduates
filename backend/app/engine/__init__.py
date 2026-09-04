@@ -5,9 +5,9 @@ which builds and runs a LangGraph workflow:
 
     rules_loader → job_analyzer → resume_generator → qa_validator
 
-The engine is provider-agnostic in shape but currently bound to OpenAI
-via the `OPENAI_API_KEY` env var. Swapping providers means implementing
-a new `LLMClient` in `engine/llm.py`.
+The engine is provider-agnostic in shape but currently bound to Google
+Gemini via the `GEMINI_API_KEY` env var. Swapping providers means
+implementing a new `LLMClient` in `engine/llm.py`.
 """
 from __future__ import annotations
 

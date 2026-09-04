@@ -1,7 +1,7 @@
 # FreeGraduates AI Resume Builder — Backend
 
 The Python backend that powers FreeGraduates' resume generation. Built on
-FastAPI, LangGraph, and OpenAI, with the rule system inherited from
+FastAPI, LangGraph, and Google Gemini, with the rule system inherited from
 [`haderalva/ai-resume-builder`](https://github.com/haderalva/ai-resume-builder)
 (CC BY-NC 4.0).
 
@@ -19,7 +19,7 @@ app/
 ├── engine/
 │   ├── agents.py        rules / input / job / generator / QA agents
 │   ├── graph.py         Top-level `generate_resume(...)` entry point
-│   ├── llm.py           Provider-agnostic OpenAI wrapper
+│   ├── llm.py           Provider-agnostic Gemini wrapper
 │   ├── rules_loader.py  Loads the four Layer files
 │   └── schemas.py       Structured-resume Pydantic contract
 ├── services/            PDF extraction + DOCX / PDF / Markdown export
@@ -38,7 +38,7 @@ python -m venv .venv
 pip install -r requirements.txt
 
 # 2. Configure
-copy .env.example .env            # then fill in OPENAI_API_KEY etc.
+copy .env.example .env            # then fill in GEMINI_API_KEY etc.
 
 # 3. Start the server
 python main.py
@@ -54,8 +54,8 @@ frontend expects it on this port — see `frontend/.env.example`.
 | Variable | Required | Description |
 |---|---|---|
 | `PORT` | no (default 8000) | HTTP port |
-| `OPENAI_API_KEY` | **yes for AI** | OpenAI server-side key |
-| `OPENAI_MODEL` | no (`gpt-4o`) | Model used for generation |
+| `GEMINI_API_KEY` | **yes for AI** | Google Gemini server-side key |
+| `GEMINI_MODEL` | no (`gemini-1.5-flash`) | Model used for generation |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | yes (prod) | Path to Firebase service account JSON |
 | `FIREBASE_PROJECT_ID` | no | Firebase project id |
 | `DEV_AUTH_BYPASS` | no (default `false`) | Skip Firebase verification (local dev) |
@@ -64,7 +64,7 @@ frontend expects it on this port — see `frontend/.env.example`.
 | `MAX_UPLOAD_BYTES` | no (default 16 MB) | Max upload size |
 | `POPPLER_PATH` | Windows only | Path to Poppler's `bin/` |
 
-If `OPENAI_API_KEY` is **not** set, the engine falls back to a safe
+If `GEMINI_API_KEY` is **not** set, the engine falls back to a safe
 non-AI template generator that only re-shapes the candidate data — no
 fabrication is possible in this mode.
 

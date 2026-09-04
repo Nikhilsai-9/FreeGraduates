@@ -109,8 +109,8 @@ class OptionalSection(BaseModel):
 class ResumeStructured(BaseModel):
     """The complete generated resume.
 
-    This Pydantic model is also used as the OpenAI `json_schema` target so the
-    model is forced to emit strict JSON that downstream tools can rely on.
+    This Pydantic model is also used as the Gemini `response_schema` target so
+    the model is forced to emit strict JSON that downstream tools can rely on.
     """
 
     header: Header

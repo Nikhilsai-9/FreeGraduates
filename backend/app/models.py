@@ -154,7 +154,7 @@ class ExtractPdfResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    openai_configured: bool
+    gemini_configured: bool
     firebase_configured: bool
     model: str
     data_dir: str
