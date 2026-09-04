@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+.env
+.env.local
+.env.production
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Firebase Admin
+firebase-service-account.json
+
+# Local data / uploads
+app/data/cvs/*
+app/data/outputs/*
+app/data/users/*
+!app/data/cvs/.gitkeep
+!app/data/outputs/.gitkeep
+!app/data/users/.gitkeep
+app/data/uploads/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

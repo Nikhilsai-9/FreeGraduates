@@ -13,6 +13,7 @@ import Signup from "./pages/Signup";
 import History from "./pages/History";
 import Results from "./pages/Results";
 import "./App.css";
+import "./components/ResumeBuilder.css";
 
 // Unified Authenticated Workspace Layout
 function AuthenticatedWorkspace() {

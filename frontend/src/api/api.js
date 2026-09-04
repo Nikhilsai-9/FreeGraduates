@@ -1,15 +1,15 @@
 import axios from "axios";
 import { auth } from "../config/firebase";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// Axios instance with minimum 60000ms timeout per spec
+// Axios instance with generous timeout for AI generation
 export const api = axios.create({
   baseURL,
-  timeout: 60000
+  timeout: 90000,
 });
 
-// Attach Firebase ID Token dynamically on requests
+// Attach Firebase ID Token to every request
 api.interceptors.request.use(async (config) => {
   try {
     const user = auth.currentUser;
@@ -19,7 +19,8 @@ api.interceptors.request.use(async (config) => {
       config.headers["x-user-uid"] = user.uid;
       config.headers["x-user-email"] = user.email || "";
     } else {
-      config.headers.Authorization = `Bearer dev-token`;
+      // Dev fallback so the user can poke the API without auth.
+      config.headers.Authorization = "Bearer dev-token";
       config.headers["x-user-uid"] = "demo-student-uid";
       config.headers["x-user-email"] = "student@freegraduates.com";
     }
@@ -29,83 +30,98 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// =====================================================================
+// AI Resume Builder API
+// All endpoints delegate to the Python FastAPI backend.
+// Docs: backend/README.md
+// =====================================================================
+
 export const resumeApi = {
-  // --- 1. Original ATS Analyzer APIs ---
-  fullAnalyze: async (formData) => {
-    const response = await api.post("/api/resume/full-analyze", formData);
-    return response.data;
-  },
-
-  upload: async (formData) => {
-    const response = await api.post("/api/resume/upload", formData);
-    return response.data;
-  },
-
-  analyze: async (analysisId, jobDescription) => {
-    const response = await api.post("/api/resume/analyze", { analysisId, jobDescription });
-    return response.data;
-  },
-
-  getHistory: async () => {
-    const response = await api.get("/api/resume/history");
-    return response.data;
-  },
-
-  getById: async (id) => {
-    const response = await api.get(`/api/resume/${id}`);
-    return response.data;
-  },
-
-  deleteById: async (id) => {
-    const response = await api.delete(`/api/resume/${id}`);
-    return response.data;
-  },
-
-  checkHealth: async () => {
+  // ---------- Health / meta ----------
+  health: async () => {
     const response = await api.get("/api/health");
     return response.data;
   },
 
-  // --- 2. Interactive Resume Builder APIs ---
-  importLinkedIn: async (formData) => {
-    const response = await api.post("/api/resumes/import-linkedin", formData);
+  templates: async () => {
+    const response = await api.get("/api/templates");
     return response.data;
   },
 
-  importFile: async (formData) => {
-    const response = await api.post("/api/resumes/import-file", formData);
+  // ---------- PDF upload + extraction ----------
+  extract: async (file) => {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await api.post("/api/resume/extract", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 120000,
+    });
     return response.data;
   },
 
-  createResume: async (resumeData) => {
-    const response = await api.post("/api/resumes", resumeData);
+  // ---------- AI generation ----------
+  generate: async ({ candidate, job, templateId }) => {
+    const response = await api.post("/api/resume/generate", {
+      candidate,
+      job,
+      templateId,
+    });
     return response.data;
   },
 
-  getResumes: async () => {
-    const response = await api.get("/api/resumes");
+  // ---------- CRUD: saved resumes ----------
+  save: async (payload) => {
+    const response = await api.post("/api/resume/save", payload);
     return response.data;
   },
 
-  getResume: async (id) => {
-    const response = await api.get(`/api/resumes/${id}`);
+  list: async () => {
+    const response = await api.get("/api/resume/list");
     return response.data;
   },
 
-  updateResume: async (id, resumeData) => {
-    const response = await api.put(`/api/resumes/${id}`, resumeData);
+  get: async (id) => {
+    const response = await api.get(`/api/resume/${id}`);
     return response.data;
   },
 
-  deleteResume: async (id) => {
-    const response = await api.delete(`/api/resumes/${id}`);
+  remove: async (id) => {
+    const response = await api.delete(`/api/resume/${id}`);
     return response.data;
   },
 
-  suggestImprovements: async (id, jobDescription) => {
-    const response = await api.post(`/api/resumes/${id}/suggest-improvements`, { jobDescription });
-    return response.data;
-  },
+  // ---------- Export ----------
+  // The backend streams the binary directly; we use a fetch wrapper
+  // so we can stream the response as a blob and trigger a download.
+  exportUrl: (id, format) =>
+    `${baseURL}/api/resume/${id}/export?format=${format}`,
 
-  exportDocxUrl: (id) => `${baseURL}/api/resumes/${id}/export-docx`
+  export: async (id, format) => {
+    const user = auth.currentUser;
+    const headers = {};
+    if (user) {
+      headers.Authorization = `Bearer ${await user.getIdToken()}`;
+      headers["x-user-uid"] = user.uid;
+      headers["x-user-email"] = user.email || "";
+    } else {
+      headers.Authorization = "Bearer dev-token";
+    }
+    const response = await fetch(
+      `${baseURL}/api/resume/${id}/export?format=${format}`,
+      { headers },
+    );
+    if (!response.ok) {
+      throw new Error(`Export failed (${response.status})`);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `resume.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
 };
+
