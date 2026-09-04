@@ -1,7 +1,21 @@
 import axios from "axios";
 import { auth } from "../config/firebase";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const envUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.trim() : "";
+
+// Production MUST point at the deployed Render backend. If the var is
+// missing in prod we log loudly instead of silently downloading to the
+// end-user's own machine (localhost), which is what caused the
+// "Cannot reach the resume extraction service" production failure.
+const baseURL =
+  envUrl || (import.meta.env.PROD ? "https://freegraduates-backend.onrender.com" : "http://localhost:8000");
+
+if (import.meta.env.PROD && !envUrl) {
+  console.warn(
+    "[api] VITE_API_URL is not set for this production build — using default " + baseURL + ". " +
+    "Set VITE_API_URL in your Vercel project env vars to the Render backend URL (see frontend/.env.example)."
+  );
+}
 
 export const api = axios.create({
   baseURL,
