@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=1)
-def _bootstrap_firebase(settings: Settings) -> bool:
+def _bootstrap_firebase() -> bool:
     """Initialise the Firebase Admin app exactly once.
 
     Returns True if Admin is initialised and ready to verify tokens,
@@ -36,6 +36,7 @@ def _bootstrap_firebase(settings: Settings) -> bool:
     if firebase_admin._apps:
         return True
 
+    settings = get_settings()
     if not settings.is_firebase_configured:
         logger.warning(
             "Firebase service account not found at %s. "
@@ -74,7 +75,7 @@ async def get_current_user(
     3. 401 if neither succeeds.
     """
 
-    firebase_ready = _bootstrap_firebase(settings)
+    firebase_ready = _bootstrap_firebase()
 
     # -------- 1. Production: verify Firebase ID token --------
     if firebase_ready and authorization and authorization.lower().startswith("bearer "):

@@ -3,13 +3,11 @@ import { auth } from "../config/firebase";
 
 const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// Axios instance with generous timeout for AI generation
 export const api = axios.create({
   baseURL,
   timeout: 90000,
 });
 
-// Attach Firebase ID Token to every request
 api.interceptors.request.use(async (config) => {
   try {
     const user = auth.currentUser;
@@ -19,7 +17,6 @@ api.interceptors.request.use(async (config) => {
       config.headers["x-user-uid"] = user.uid;
       config.headers["x-user-email"] = user.email || "";
     } else {
-      // Dev fallback so the user can poke the API without auth.
       config.headers.Authorization = "Bearer dev-token";
       config.headers["x-user-uid"] = "demo-student-uid";
       config.headers["x-user-email"] = "student@freegraduates.com";
@@ -30,14 +27,58 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// =====================================================================
-// AI Resume Builder API
-// All endpoints delegate to the Python FastAPI backend.
-// Docs: backend/README.md
-// =====================================================================
+export class ExtractError extends Error {
+  constructor(message, status, detail) {
+    super(message);
+    this.name = "ExtractError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+function categoriseExtractError(err) {
+  if (err.response) {
+    const { status, data } = err.response;
+    const detail = data?.detail || "";
+    switch (status) {
+      case 415:
+        return new ExtractError("File must be a PDF.", 415, detail);
+      case 413:
+        return new ExtractError("PDF exceeds the supported file size (16 MB max).", 413, detail);
+      case 422:
+        return new ExtractError(
+          "Your PDF appears to be image-based or empty. Try a text-based PDF, or enter your information manually.",
+          422,
+          detail
+        );
+      case 500:
+        return new ExtractError(
+          "Resume extraction service encountered an error. Please try again or enter your information manually.",
+          500,
+          detail
+        );
+      default:
+        return new ExtractError(
+          detail || "Unable to extract text from this PDF.",
+          status,
+          detail
+        );
+    }
+  }
+  if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+    return new ExtractError("Extraction timed out. The file may be too complex — try a simpler PDF.", 0, "timeout");
+  }
+  if (err.code === "ERR_NETWORK" || !err.response) {
+    return new ExtractError(
+      "Cannot reach the resume extraction service. Please try again later.",
+      0,
+      "network"
+    );
+  }
+  return new ExtractError("Unable to process this file. Please try another PDF.", 0, "unknown");
+}
 
 export const resumeApi = {
-  // ---------- Health / meta ----------
   health: async () => {
     const response = await api.get("/api/health");
     return response.data;
@@ -48,23 +89,24 @@ export const resumeApi = {
     return response.data;
   },
 
-  // ---------- PDF upload + extraction ----------
-  // IMPORTANT: do NOT set Content-Type manually for FormData uploads.
-  // When you pass FormData, the browser/axios must auto-generate the
-  // `boundary=...` parameter; hardcoding `multipart/form-data` without a
-  // boundary makes python-multipart reject the body as unparseable,
-  // which previously surfaced to the user as
-  //   "We couldn't read this file. Please try another PDF."
-  extract: async (file) => {
+  extract: async (file, onProgress) => {
     const form = new FormData();
     form.append("file", file);
-    const response = await api.post("/api/resume/extract", form, {
-      timeout: 120000,
-    });
-    return response.data;
+    try {
+      const response = await api.post("/api/resume/extract", form, {
+        timeout: 120000,
+        onUploadProgress: onProgress
+          ? (e) => {
+              if (e.total) onProgress(Math.round((e.loaded / e.total) * 50));
+            }
+          : undefined,
+      });
+      return response.data;
+    } catch (err) {
+      throw categoriseExtractError(err);
+    }
   },
 
-  // ---------- AI generation ----------
   generate: async ({ candidate, job, templateId }) => {
     const response = await api.post("/api/resume/generate", {
       candidate,
@@ -74,7 +116,6 @@ export const resumeApi = {
     return response.data;
   },
 
-  // ---------- CRUD: saved resumes ----------
   save: async (payload) => {
     const response = await api.post("/api/resume/save", payload);
     return response.data;
@@ -95,9 +136,6 @@ export const resumeApi = {
     return response.data;
   },
 
-  // ---------- Export ----------
-  // The backend streams the binary directly; we use a fetch wrapper
-  // so we can stream the response as a blob and trigger a download.
   exportUrl: (id, format) =>
     `${baseURL}/api/resume/${id}/export?format=${format}`,
 
@@ -113,7 +151,7 @@ export const resumeApi = {
     }
     const response = await fetch(
       `${baseURL}/api/resume/${id}/export?format=${format}`,
-      { headers },
+      { headers }
     );
     if (!response.ok) {
       throw new Error(`Export failed (${response.status})`);
@@ -129,4 +167,3 @@ export const resumeApi = {
     URL.revokeObjectURL(url);
   },
 };
-

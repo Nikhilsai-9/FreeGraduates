@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Bot,
   History,
+  Wand2,
   LogOut,
   ChevronLeft,
   ChevronRight
@@ -24,13 +25,13 @@ export default function Sidebar({
     { id: "builder", label: "Resume Builder", icon: FileText },
     { id: "analyzer", label: "AI Resume Analyzer", icon: Sparkles },
     { id: "ats-checker", label: "ATS Scanner", icon: CheckCircle2 },
+    { id: "optimizer", label: "AI Resume Optimizer", icon: Wand2 },
     { id: "coach", label: "AI Coach & Tools", icon: Bot, badge: "Beta" },
     { id: "history", label: "Audit History", icon: History }
   ];
 
   return (
     <aside className={`unified-sidebar ${collapsed ? "collapsed" : ""}`}>
-      {/* Brand Header */}
       <div className="sidebar-brand-area">
         <button
           type="button"
@@ -41,9 +42,8 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Navigation List */}
       <nav className="sidebar-nav-container">
-        <div className="nav-group-label">{!collapsed ? "WORKSPACE" : "•"}</div>
+        <div className="nav-group-label">{!collapsed ? "WORKSPACE" : "\u2022"}</div>
         <div className="nav-items-list">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -56,7 +56,7 @@ export default function Sidebar({
                 onClick={() => setActiveView(item.id)}
                 title={collapsed ? item.label : undefined}
               >
-                <Icon size={19} className="nav-icon" />
+                <Icon size={18} className="nav-icon" />
                 {!collapsed && <span className="nav-item-label">{item.label}</span>}
                 {!collapsed && item.badge && (
                   <span className="nav-item-badge">{item.badge}</span>
@@ -67,7 +67,6 @@ export default function Sidebar({
         </div>
       </nav>
 
-      {/* Sidebar Footer & Collapse Toggle */}
       <div className="sidebar-footer-area">
         <button
           type="button"
@@ -75,8 +74,8 @@ export default function Sidebar({
           onClick={() => setCollapsed(!collapsed)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          {!collapsed && <span>Collapse Sidebar</span>}
+          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          {!collapsed && <span>Collapse</span>}
         </button>
 
         <button
@@ -85,7 +84,7 @@ export default function Sidebar({
           onClick={onLogout}
           title={collapsed ? "Sign Out" : undefined}
         >
-          <LogOut size={18} />
+          <LogOut size={16} />
           {!collapsed && <span>Sign Out</span>}
         </button>
       </div>

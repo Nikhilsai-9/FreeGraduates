@@ -488,6 +488,158 @@ img.avatar-circle.avatar-img {
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* Welcome Banner */
+.pro-welcome-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0f2d5c 100%);
+  border-radius: 14px;
+  padding: 28px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 20px;
+  color: #ffffff;
+}
+.pro-welcome-banner .pro-greeting-title {
+  color: #ffffff;
+  font-size: 22px;
+}
+.pro-welcome-banner .pro-greeting-subtitle {
+  color: #cbd5e1;
+  margin-bottom: 0;
+}
+.pro-welcome-banner .pro-command-actions .pro-btn-primary {
+  background-color: var(--color-signal-blue);
+}
+.pro-welcome-banner .pro-command-actions .pro-btn-secondary {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+.pro-welcome-banner .pro-command-actions .pro-btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+/* Quick Action Tools Grid */
+.pro-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.pro-tool-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background-color: #ffffff;
+  border: 1px solid var(--color-card-border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+.pro-tool-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-card);
+}
+.pro-tool-card:hover .pro-tool-arrow {
+  transform: translateX(2px);
+  color: var(--color-signal-blue);
+}
+
+.pro-tool-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pro-tool-icon.blue { background-color: #eff6ff; color: #2563eb; }
+.pro-tool-icon.emerald { background-color: #f0fdf4; color: #16a34a; }
+.pro-tool-icon.indigo { background-color: #eef2ff; color: #4f46e5; }
+.pro-tool-icon.violet { background-color: #faf5ff; color: #9333ea; }
+
+.pro-tool-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pro-tool-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink-primary);
+}
+.pro-tool-desc {
+  font-size: 12px;
+  color: var(--color-ink-tertiary);
+}
+.pro-tool-arrow {
+  color: var(--color-ink-tertiary);
+  flex-shrink: 0;
+  transition: all 0.12s ease;
+}
+
+/* Resumes simple list */
+.pro-resumes-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.pro-resume-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--color-card-border);
+}
+.pro-resume-row:last-child {
+  border-bottom: none;
+}
+
+.pro-resume-row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pro-resume-row-info {
+  min-width: 0;
+}
+
+.pro-resume-row-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  color: var(--color-ink-tertiary);
+}
+
+.pro-resume-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .pro-tools-grid {
+    grid-template-columns: 1fr;
+  }
+  .pro-resume-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
 /* Command Header */
 .pro-command-header {
   background-color: var(--color-paper);

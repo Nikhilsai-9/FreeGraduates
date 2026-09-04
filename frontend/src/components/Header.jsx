@@ -1,15 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  Menu,
-  Bell,
-  Search,
-  User,
-  LogOut,
-  Sparkles,
-  FileText,
-  History,
-  Check
-} from "lucide-react";
+import { Menu, Bell, LogOut, ChevronLeft } from "lucide-react";
 
 export default function Header({
   activeView,
@@ -20,38 +10,29 @@ export default function Header({
   onLogout
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [avatarImgError, setAvatarImgError] = useState(false);
-
   const profileRef = useRef(null);
-  const notifRef = useRef(null);
 
   useEffect(() => {
     const handler = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
       }
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setNotifOpen(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Reset image error state when user changes (e.g. login/logout)
-  useEffect(() => {
-    setAvatarImgError(false);
-  }, [currentUser?.uid]);
+  useEffect(() => { setAvatarImgError(false); }, [currentUser?.uid]);
 
   const titles = {
-    dashboard: "Career Dashboard",
+    dashboard: "Dashboard",
     builder: "Resume Builder",
-    analyzer: "AI Resume Analyzer & Diff",
-    "ats-checker": "ATS Compatibility Scanner",
-    coach: "AI Career Coach",
-    history: "Audit & Analysis History"
+    analyzer: "AI Resume Analyzer",
+    "ats-checker": "ATS Scanner",
+    optimizer: "AI Resume Optimizer",
+    coach: "AI Coach & Tools",
+    history: "Audit History"
   };
 
   const getUserInitials = () => {
@@ -61,51 +42,27 @@ export default function Header({
         ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
         : parts[0].slice(0, 2).toUpperCase();
     }
-    if (currentUser?.email) {
-      return currentUser.email.slice(0, 2).toUpperCase();
-    }
+    if (currentUser?.email) return currentUser.email.slice(0, 2).toUpperCase();
     return "FG";
   };
 
-  // Firebase Auth provides photoURL for Google OAuth and manual profile updates
-  const getUserPhotoURL = () => {
+  const photoURL = (() => {
     if (!currentUser) return null;
     const url = currentUser.photoURL || currentUser.avatar || currentUser.profileImage || null;
     if (!url || typeof url !== "string" || url.trim() === "") return null;
     return url;
-  };
-
-  const photoURL = getUserPhotoURL();
-
-  const notifications = [
-    {
-      id: 1,
-      title: "Interactive Diff Ready",
-      desc: "Review line-by-line ATS suggested enhancements and approvals.",
-      time: "Just now",
-      unread: true
-    },
-    {
-      id: 2,
-      title: "LinkedIn Import Activated",
-      desc: "You can now parse your full profile with 1-click import.",
-      time: "2h ago",
-      unread: true
-    }
-  ];
+  })();
 
   return (
     <header className="unified-top-header">
-      {/* Left: Hamburger Toggle & View Title */}
       <div className="header-left-cluster">
         <button
           type="button"
           className="hamburger-toggle-btn"
           onClick={() => setCollapsed(!collapsed)}
           aria-label="Toggle Sidebar"
-          title="Toggle Sidebar Navigation"
         >
-          <Menu size={20} />
+          {collapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
         </button>
 
         <div className="header-title-wrapper">
@@ -114,51 +71,14 @@ export default function Header({
         </div>
       </div>
 
-      {/* Center: Quick Search */}
-      <div className="header-search-bar">
-        <Search size={16} className="search-icon" />
-        <input
-          type="text"
-          placeholder="Search tools, templates, keywords..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      {/* Right: Notifications & User Profile */}
       <div className="header-right-cluster">
-        {/* Notification Bell */}
-        <div className="notif-wrapper" ref={notifRef}>
-          <button
-            type="button"
-            className="header-icon-btn"
-            onClick={() => setNotifOpen(!notifOpen)}
-            aria-label="Notifications"
-          >
-            <Bell size={18} />
+        <div className="notif-wrapper">
+          <button type="button" className="header-icon-btn" aria-label="Notifications">
+            <Bell size={16} />
             <span className="notif-dot"></span>
           </button>
-
-          {notifOpen && (
-            <div className="notif-popover">
-              <div className="notif-popover-header">
-                <span>Notifications</span>
-                <span className="notif-count-pill">2 new</span>
-              </div>
-              <div className="notif-popover-list">
-                {notifications.map((n) => (
-                  <div key={n.id} className="notif-popover-item">
-                    <div className="notif-item-title">{n.title}</div>
-                    <div className="notif-item-desc">{n.desc}</div>
-                    <div className="notif-item-time">{n.time}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* User Profile Avatar */}
         <div className="profile-wrapper" ref={profileRef}>
           <button
             type="button"
@@ -188,55 +108,11 @@ export default function Header({
                 <div className="user-name-bold">
                   {currentUser?.displayName || "FreeGraduates Member"}
                 </div>
-                <div className="user-email-dim">{currentUser?.email || "member@freegraduates.com"}</div>
+                <div className="user-email-dim">{currentUser?.email || ""}</div>
               </div>
-
               <div className="profile-menu-divider"></div>
-
-              <button
-                type="button"
-                className="profile-menu-item"
-                onClick={() => {
-                  setActiveView("builder");
-                  setProfileOpen(false);
-                }}
-              >
-                <FileText size={15} />
-                <span>Resume Builder</span>
-              </button>
-
-              <button
-                type="button"
-                className="profile-menu-item"
-                onClick={() => {
-                  setActiveView("analyzer");
-                  setProfileOpen(false);
-                }}
-              >
-                <Sparkles size={15} />
-                <span>AI Resume Analyzer</span>
-              </button>
-
-              <button
-                type="button"
-                className="profile-menu-item"
-                onClick={() => {
-                  setActiveView("history");
-                  setProfileOpen(false);
-                }}
-              >
-                <History size={15} />
-                <span>Audit History</span>
-              </button>
-
-              <div className="profile-menu-divider"></div>
-
-              <button
-                type="button"
-                className="profile-menu-item logout-danger"
-                onClick={onLogout}
-              >
-                <LogOut size={15} />
+              <button type="button" className="profile-menu-item" onClick={onLogout}>
+                <LogOut size={14} />
                 <span>Sign Out</span>
               </button>
             </div>

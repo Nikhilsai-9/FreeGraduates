@@ -1,11 +1,14 @@
 // =====================================================================
 // FreeGraduates AI Resume Builder
-// Step-by-step guided experience for students, fresh graduates, and
-// early-career professionals. Connects to the Python FastAPI backend.
+// Professional 3-column workspace: step nav | editor | live preview
 // =====================================================================
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { resumeApi } from "../api/api";
+import { resumeApi, ExtractError } from "../api/api";
+import {
+  FileText, Upload, PenTool, Layout, ChevronRight, ChevronLeft,
+  Check, X, AlertCircle, RefreshCw, File, Download, Save, Eye
+} from "lucide-react";
 
 // ---------- Candidate shape (matches backend) ----------
 const newCandidate = () => ({
@@ -40,17 +43,24 @@ const newProject = () => ({
 
 // ---------- Step definitions ----------
 const STEPS = [
-  { id: "start",      label: "1. Start",         short: "Start"      },
-  { id: "personal",   label: "2. Personal Info", short: "Info"       },
-  { id: "experience", label: "3. Experience",    short: "Experience" },
-  { id: "education",  label: "4. Education",     short: "Education"  },
-  { id: "skills",     label: "5. Skills",        short: "Skills"     },
-  { id: "projects",   label: "6. Projects",      short: "Projects"   },
-  { id: "target",     label: "7. Target Job",    short: "Target"     },
-  { id: "generate",   label: "8. Generate",      short: "Generate"   },
-  { id: "review",     label: "9. Review",        short: "Review"     },
+  { id: "start",      label: "Start",        icon: PenTool },
+  { id: "personal",   label: "Personal Info", icon: FileText },
+  { id: "experience", label: "Experience",    icon: FileText },
+  { id: "education",  label: "Education",     icon: FileText },
+  { id: "skills",     label: "Skills",        icon: FileText },
+  { id: "projects",   label: "Projects",      icon: FileText },
+  { id: "target",     label: "Target Job",    icon: FileText },
+  { id: "generate",   label: "Generate",      icon: FileText },
+  { id: "review",     label: "Review",        icon: FileText },
 ];
 
+const STEP_ORDER = STEPS.map((s) => s.id);
+
+function getStepIndex(id) {
+  return STEP_ORDER.indexOf(id);
+}
+
+// ---------- Main Component ----------
 export default function ResumeBuilderView({ onBackToDashboard, initialOptions }) {
   const [candidate, setCandidate] = useState(newCandidate());
   const [job, setJob] = useState({ role: "", company: "", description: "" });
@@ -62,6 +72,9 @@ export default function ResumeBuilderView({ onBackToDashboard, initialOptions })
   const [versionName, setVersionName] = useState("My Resume");
 
   const [extracting, setExtracting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadPhase, setUploadPhase] = useState("idle"); // idle | uploading | extracting | success | error
+  const [extractError, setExtractError] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [generationSteps, setGenerationSteps] = useState([]);
   const [generated, setGenerated] = useState(null);
@@ -71,7 +84,7 @@ export default function ResumeBuilderView({ onBackToDashboard, initialOptions })
 
   const showToast = (msg, type = "info") => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), 4000);
   };
 
   useEffect(() => {
@@ -88,8 +101,6 @@ export default function ResumeBuilderView({ onBackToDashboard, initialOptions })
       }).catch((err) => showToast("Could not load saved resume: " + err.message, "error"));
     }
   }, [initialOptions?.resumeId]);
-
-
 
   // ---------- Mutations ----------
   const setPersonal = (k, v) =>
@@ -141,37 +152,86 @@ export default function ResumeBuilderView({ onBackToDashboard, initialOptions })
 
   // ---------- Step navigation ----------
   const gotoNext = () => {
-    const idx = STEPS.findIndex((s) => s.id === step);
-    if (idx >= 0 && idx < STEPS.length - 1) setStep(STEPS[idx + 1].id);
+    const idx = STEP_ORDER.indexOf(step);
+    if (idx >= 0 && idx < STEP_ORDER.length - 1) setStep(STEP_ORDER[idx + 1]);
   };
   const gotoPrev = () => {
-    const idx = STEPS.findIndex((s) => s.id === step);
-    if (idx > 0) setStep(STEPS[idx - 1].id);
+    const idx = STEP_ORDER.indexOf(step);
+    if (idx > 0) setStep(STEP_ORDER[idx - 1]);
   };
   const gotoStep = (id) => {
-    if (STEPS.find((s) => s.id === id)) setStep(id);
+    if (STEP_ORDER.includes(id)) setStep(id);
   };
 
   // ---------- Resume extraction (PDF upload) ----------
   const fileInput = useRef(null);
+
   const onFileSelected = async (file) => {
     if (!file) return;
-    setExtracting(true);
+
+    if (!file.type.includes("pdf") && !file.name.endsWith(".pdf")) {
+      setUploadPhase("error");
+      setExtractError(new ExtractError("File must be a PDF.", 0, "client-validation"));
+      return;
+    }
+
+    if (file.size > 16 * 1024 * 1024) {
+      setUploadPhase("error");
+      setExtractError(new ExtractError("PDF exceeds the supported file size (16 MB max).", 0, "client-validation"));
+      return;
+    }
+
+    setExtractError(null);
+    setUploadPhase("uploading");
+    setUploadProgress(0);
     setCreationPath("upload");
+
+    const progressTimer = setTimeout(() => {
+      setUploadPhase("extracting");
+    }, 1500);
+
     try {
-      const res = await resumeApi.extract(file);
+      const res = await resumeApi.extract(file, (pct) => {
+        setUploadProgress(pct);
+      });
+      clearTimeout(progressTimer);
+
       if (res?.parsed) {
         setCandidate(mergeCandidate(newCandidate(), res.parsed));
-        showToast("Resume extracted - review and continue.", "success");
-        setStep("personal");
+        setUploadPhase("success");
+        setExtractError(null);
+        setTimeout(() => {
+          setStep("personal");
+          setUploadPhase("idle");
+        }, 1200);
       } else {
-        showToast("Extraction returned no data. Please try another PDF.", "error");
+        setUploadPhase("error");
+        setExtractError(new ExtractError(
+          "Extraction returned no data. Please try another PDF.",
+          422, "empty-response"
+        ));
       }
     } catch (err) {
-      showToast("We couldn't read this file. Please try another PDF.", "error");
+      clearTimeout(progressTimer);
+      setUploadPhase("error");
+      if (err instanceof ExtractError) {
+        setExtractError(err);
+      } else {
+        setExtractError(new ExtractError(
+          "Unable to process this file. Please try another PDF.",
+          0, "unknown"
+        ));
+      }
     } finally {
       setExtracting(false);
     }
+  };
+
+  const resetUpload = () => {
+    setUploadPhase("idle");
+    setExtractError(null);
+    setUploadProgress(0);
+    if (fileInput.current) fileInput.current.value = "";
   };
 
   // ---------- Generate ----------
@@ -255,196 +315,257 @@ export default function ResumeBuilderView({ onBackToDashboard, initialOptions })
     setStep("personal");
   };
 
-
-
   // ---------- Render ----------
+  const currentStepIdx = STEP_ORDER.indexOf(step);
+  const isOnStart = step === "start";
+
   return (
     <div className="fg-rb">
       {toast && (
-        <div className={`fg-rb__toast fg-rb__toast--${toast.type}`}>{toast.msg}</div>
+        <div className={`fg-rb__toast fg-rb__toast--${toast.type}`}>
+          <span>{toast.msg}</span>
+          <button className="fg-rb__toast-close" onClick={() => setToast(null)}>
+            <X size={14} />
+          </button>
+        </div>
       )}
 
+      {/* Compact top bar */}
       <header className="fg-rb__topbar">
-        <button className="fg-rb__back" onClick={onBackToDashboard}>← Dashboard</button>
-        <div className="fg-rb__topbar-title">
-          <span className="fg-rb__eyebrow">FREEGRADUATES</span>
-          <h1>AI Resume Builder</h1>
+        <button className="fg-rb__back" onClick={onBackToDashboard}>
+          <ChevronLeft size={16} />
+          <span>Dashboard</span>
+        </button>
+        <div className="fg-rb__topbar-center">
+          <span className="fg-rb__topbar-title">Resume Builder</span>
         </div>
         <div className="fg-rb__topbar-actions">
-          {savedId && step !== "start" && (
-            <span className="fg-rb__saved-pill">✓ Saved</span>
+          {savedId && !isOnStart && (
+            <span className="fg-rb__saved-pill"><Check size={12} /> Saved</span>
           )}
-          <button
-            className="fg-btn fg-btn--ghost"
-            onClick={handleSave}
-            disabled={!candidate.personal_info.fullName}
-          >
-            {savedId ? "Update" : "Save"}
-          </button>
+          {!isOnStart && (
+            <button className="fg-btn fg-btn--ghost fg-btn--sm" onClick={handleSave}
+              disabled={!candidate.personal_info.fullName}>
+              <Save size={14} />
+              {savedId ? "Update" : "Save"}
+            </button>
+          )}
         </div>
       </header>
 
-      <div className="fg-rb__shell">
-        <nav className="fg-rb__rail" aria-label="Builder steps">
-          <ol>
-            {STEPS.map((s) => (
-              <li key={s.id}>
-                <button
-                  className={`fg-rb__step-btn ${step === s.id ? "is-active" : ""}`}
-                  onClick={() => gotoStep(s.id)}
-                  aria-current={step === s.id ? "step" : undefined}
-                >
-                  <span>{s.label}</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </nav>
+      <div className="fg-rb__body">
+        {/* Left: Step rail */}
+        {!isOnStart && (
+          <nav className="fg-rb__rail" aria-label="Builder steps">
+            <div className="fg-rb__rail-inner">
+              {STEPS.map((s, idx) => {
+                const isActive = step === s.id;
+                const isCompleted = idx < currentStepIdx;
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.id}
+                    className={`fg-rb__step ${isActive ? "is-active" : ""} ${isCompleted ? "is-done" : ""}`}
+                    onClick={() => gotoStep(s.id)}
+                    aria-current={isActive ? "step" : undefined}
+                  >
+                    <span className="fg-rb__step-num">
+                      {isCompleted ? <Check size={12} /> : idx + 1}
+                    </span>
+                    <span className="fg-rb__step-label">{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        )}
 
-        <section className="fg-rb__main">
+        {/* Center: Main workspace */}
+        <main className={`fg-rb__main ${isOnStart ? "fg-rb__main--full" : ""}`}>
           <div className="fg-rb__editor">
             {step === "start" && (
               <StartStep
-                candidate={candidate}
                 creationPath={creationPath}
                 setCreationPath={setCreationPath}
                 templates={templates}
                 templateId={templateId}
                 setTemplateId={setTemplateId}
                 savedIds={savedIds}
-                loadingTemplates={templates.length === 0}
-                extracting={extracting}
+                uploadPhase={uploadPhase}
+                uploadProgress={uploadProgress}
+                extractError={extractError}
                 fileInput={fileInput}
                 onScratch={() => startNewResume("scratch")}
                 onUseTemplate={() => startNewResume("template")}
                 onFile={onFileSelected}
+                onResetUpload={resetUpload}
                 onLoadResume={loadSavedResume}
               />
             )}
             {step === "personal" && (
-              <PersonalStep
-                candidate={candidate}
-                setPersonal={setPersonal}
-                setCandidate={setCandidate}
-              />
+              <PersonalStep candidate={candidate} setPersonal={setPersonal} setCandidate={setCandidate} />
             )}
             {step === "experience" && (
-              <ExperienceStep
-                candidate={candidate}
-                addExperience={addExperience}
-                updateExperience={updateExperience}
-                removeExperience={removeExperience}
-              />
+              <ExperienceStep candidate={candidate} addExperience={addExperience}
+                updateExperience={updateExperience} removeExperience={removeExperience} />
             )}
             {step === "education" && (
-              <EducationStep
-                candidate={candidate}
-                addEducation={addEducation}
-                updateEducation={updateEducation}
-                removeEducation={removeEducation}
-              />
+              <EducationStep candidate={candidate} addEducation={addEducation}
+                updateEducation={updateEducation} removeEducation={removeEducation} />
             )}
             {step === "skills" && (
               <SkillsStep candidate={candidate} setSkillsText={setSkillsText} />
             )}
             {step === "projects" && (
-              <ProjectsStep
-                candidate={candidate}
-                addProject={addProject}
-                updateProject={updateProject}
-                removeProject={removeProject}
-              />
+              <ProjectsStep candidate={candidate} addProject={addProject}
+                updateProject={updateProject} removeProject={removeProject} />
             )}
             {step === "target" && (
               <TargetStep job={job} setJob={setJob} />
             )}
             {step === "generate" && (
-              <GenerateStep
-                candidate={candidate}
-                generating={generating}
-                generationSteps={generationSteps}
-                onGenerate={handleGenerate}
-                onBack={gotoPrev}
-              />
+              <GenerateStep generating={generating} generationSteps={generationSteps}
+                onGenerate={handleGenerate} onBack={gotoPrev} />
             )}
             {step === "review" && (
-              <ReviewStep
-                generated={generated}
-                warnings={warnings}
-                versionName={versionName}
-                setVersionName={setVersionName}
-                templateId={templateId}
-                setTemplateId={setTemplateId}
-                templates={templates}
-                savedId={savedId}
-                onSave={handleSave}
-                onExport={handleExport}
-                onReEdit={() => setStep("personal")}
-              />
+              <ReviewStep generated={generated} warnings={warnings} versionName={versionName}
+                setVersionName={setVersionName} templateId={templateId} setTemplateId={setTemplateId}
+                templates={templates} savedId={savedId} onSave={handleSave}
+                onExport={handleExport} onReEdit={() => setStep("personal")} />
             )}
 
-            {step !== "start" && (
+            {!isOnStart && step !== "review" && (
               <div className="fg-rb__nav">
-                <button className="fg-btn fg-btn--ghost" onClick={gotoPrev}>← Back</button>
-                {step !== "review" && (
-                  <button className="fg-btn fg-btn--primary" onClick={gotoNext}>
-                    {step === "generate" ? "Skip - show preview" : "Continue →"}
-                  </button>
-                )}
+                <button className="fg-btn fg-btn--ghost" onClick={gotoPrev}>
+                  <ChevronLeft size={14} /> Back
+                </button>
+                <button className="fg-btn fg-btn--primary" onClick={gotoNext}>
+                  {step === "generate" ? "Skip to Preview" : "Continue"}
+                  <ChevronRight size={14} />
+                </button>
               </div>
             )}
           </div>
+        </main>
 
+        {/* Right: Live preview */}
+        {!isOnStart && (
           <aside className="fg-rb__preview">
-            <div className="fg-rb__preview-header">
-              <span className="fg-rb__eyebrow">LIVE PREVIEW</span>
-              <h3>Your resume, updated as you type</h3>
+            <div className="fg-rb__preview-head">
+              <Eye size={14} />
+              <span>Live Preview</span>
             </div>
             <div className="fg-rb__preview-paper">
               <LivePreview candidate={candidate} job={job} templateId={templateId} generated={generated} />
             </div>
           </aside>
-        </section>
+        )}
       </div>
     </div>
   );
 }
 
 
+// ---------- Start Step ----------
+function StartStep({
+  creationPath, setCreationPath, templates, templateId, setTemplateId,
+  savedIds, uploadPhase, uploadProgress, extractError,
+  fileInput, onScratch, onUseTemplate, onFile, onResetUpload, onLoadResume
+}) {
+  const isUploading = uploadPhase === "uploading" || uploadPhase === "extracting";
+  const isSuccess = uploadPhase === "success";
+  const isError = uploadPhase === "error";
 
-// ---------- Step Components ----------
+  const formatSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
-function StartStep({ creationPath, setCreationPath, templates, templateId, setTemplateId,
-                    savedIds, extracting, fileInput,
-                    onScratch, onUseTemplate, onFile, onLoadResume }) {
   return (
     <div className="fg-step">
-      <span className="fg-step__eyebrow">STEP 1</span>
-      <h2 className="fg-step__title">How would you like to start?</h2>
-      <p className="fg-step__subtitle">Choose how you want to build your resume. You can change your mind at any time.</p>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">How would you like to start?</h2>
+        <p className="fg-step__subtitle">Choose a path to build your resume. You can change your mind at any time.</p>
+      </div>
 
-      <div className="fg-cards-3">
-        <button className={`fg-choice ${creationPath === "scratch" ? "is-active" : ""}`} onClick={onScratch}>
-          <div className="fg-choice__icon">＋</div>
-          <h4>Start from Scratch</h4>
-          <p>Walk through every section and build your resume step by step.</p>
+      <div className="fg-start-cards">
+        {/* Start from Scratch */}
+        <button className={`fg-start-card ${creationPath === "scratch" ? "is-active" : ""}`}
+          onClick={onScratch}>
+          <div className="fg-start-card__icon-wrap fg-start-card__icon-wrap--blue">
+            <PenTool size={22} />
+          </div>
+          <div className="fg-start-card__content">
+            <h4>Start from Scratch</h4>
+            <p>Walk through every section and build your resume step by step with full control.</p>
+          </div>
+          <ChevronRight size={16} className="fg-start-card__arrow" />
         </button>
 
-        <div className={`fg-choice ${creationPath === "upload" ? "is-active" : ""}`}>
-          <div className="fg-choice__icon">↑</div>
-          <h4>Upload Existing Resume</h4>
-          <p>Drop a PDF and we will extract your details. You review before continuing.</p>
-          <input ref={fileInput} type="file" accept="application/pdf" style={{ display: "none" }} onChange={(e) => onFile(e.target.files?.[0])} />
-          <button className="fg-btn fg-btn--primary fg-btn--block" disabled={extracting} onClick={() => fileInput.current?.click()}>
-            {extracting ? "Extracting…" : "Choose PDF"}
-          </button>
+        {/* Upload Existing Resume */}
+        <div className={`fg-start-card ${creationPath === "upload" ? "is-active" : ""}`}>
+          <div className="fg-start-card__icon-wrap fg-start-card__icon-wrap--emerald">
+            <Upload size={22} />
+          </div>
+          <div className="fg-start-card__content">
+            <h4>Upload Existing Resume</h4>
+            <p>Import your existing PDF and we'll extract your information so you can review and improve it.</p>
+          </div>
+
+          <input ref={fileInput} type="file" accept=".pdf,application/pdf"
+            style={{ display: "none" }}
+            onChange={(e) => onFile(e.target.files?.[0])} />
+
+          {/* Upload states */}
+          {uploadPhase === "idle" && (
+            <button className="fg-btn fg-btn--primary fg-btn--block"
+              onClick={() => fileInput.current?.click()}>
+              <Upload size={14} /> Upload PDF
+            </button>
+          )}
+
+          {isUploading && (
+            <div className="fg-upload-progress">
+              <div className="fg-upload-progress__bar">
+                <div className="fg-upload-progress__fill"
+                  style={{ width: `${uploadPhase === "extracting" ? 75 : uploadProgress}%` }} />
+              </div>
+              <span className="fg-upload-progress__text">
+                {uploadPhase === "uploading" ? "Uploading resume..." : "Extracting your resume..."}
+              </span>
+            </div>
+          )}
+
+          {isSuccess && (
+            <div className="fg-upload-result fg-upload-result--success">
+              <Check size={16} />
+              <span>Resume imported successfully</span>
+            </div>
+          )}
+
+          {isError && (
+            <div className="fg-upload-result fg-upload-result--error">
+              <AlertCircle size={16} />
+              <span>{extractError?.message || "Extraction failed"}</span>
+              <button className="fg-btn fg-btn--ghost fg-btn--sm" onClick={onResetUpload}>
+                <RefreshCw size={12} /> Retry
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className={`fg-choice ${creationPath === "template" ? "is-active" : ""}`}>
-          <div className="fg-choice__icon">❘</div>
-          <h4>Use a Template</h4>
-          <p>Pick a template first - ATS-friendly by default.</p>
-          <select className="fg-input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+        {/* Use a Template */}
+        <div className={`fg-start-card ${creationPath === "template" ? "is-active" : ""}`}>
+          <div className="fg-start-card__icon-wrap fg-start-card__icon-wrap--iris">
+            <Layout size={22} />
+          </div>
+          <div className="fg-start-card__content">
+            <h4>Use a Template</h4>
+            <p>Pick a professionally designed template — ATS-friendly by default.</p>
+          </div>
+          <select className="fg-input fg-input--select"
+            value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
             {(templates.length ? templates : [
               { id: "classic", label: "Classic" },
               { id: "professional", label: "Professional" },
@@ -454,134 +575,243 @@ function StartStep({ creationPath, setCreationPath, templates, templateId, setTe
               { id: "software-engineer", label: "Software Engineer" },
             ]).map((t) => (<option key={t.id} value={t.id}>{t.label}</option>))}
           </select>
-          <button className="fg-btn fg-btn--ghost fg-btn--block" onClick={onUseTemplate}>Start with Template</button>
+          <button className="fg-btn fg-btn--ghost fg-btn--block" onClick={onUseTemplate}>
+            Start with Template
+          </button>
         </div>
       </div>
 
       {savedIds.length > 0 && (
-        <div className="fg-section-block" style={{ marginTop: "32px" }}>
-          <h4 className="fg-step__h">Your saved resumes</h4>
-          <ul className="fg-saved-list">
+        <div className="fg-saved-section">
+          <h4 className="fg-saved-section__title">Your saved resumes</h4>
+          <div className="fg-saved-list">
             {savedIds.map((r) => (
-              <li key={r.id}>
-                <span>{r.versionName}</span>
-                <small>Updated {new Date(r.updatedAt).toLocaleString()}</small>
-                <button className="fg-btn fg-btn--ghost" onClick={() => onLoadResume(r.id)}>Open</button>
-              </li>
+              <div key={r.id} className="fg-saved-item">
+                <FileText size={16} />
+                <div className="fg-saved-item__info">
+                  <span className="fg-saved-item__name">{r.versionName}</span>
+                  <span className="fg-saved-item__date">
+                    {new Date(r.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+                <button className="fg-btn fg-btn--ghost fg-btn--sm" onClick={() => onLoadResume(r.id)}>
+                  Open
+                </button>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
+
+// ---------- Personal Step ----------
 function PersonalStep({ candidate, setPersonal, setCandidate }) {
   const pi = candidate.personal_info;
   return (
     <div className="fg-step">
-      <span className="fg-step__eyebrow">STEP 2</span>
-      <h2 className="fg-step__title">Tell us about you</h2>
-      <p className="fg-step__subtitle">Your contact information and a short summary.</p>
-
-      <div className="fg-grid-2">
-        <Field label="Full Name" required><input className="fg-input" value={pi.fullName} onChange={(e) => setPersonal("fullName", e.target.value)} /></Field>
-        <Field label="Professional Title"><input className="fg-input" value={pi.title} placeholder="e.g. Software Engineer" onChange={(e) => setPersonal("title", e.target.value)} /></Field>
-        <Field label="Email" required><input className="fg-input" type="email" value={pi.email} onChange={(e) => setPersonal("email", e.target.value)} /></Field>
-        <Field label="Phone"><input className="fg-input" value={pi.phone} onChange={(e) => setPersonal("phone", e.target.value)} /></Field>
-        <Field label="Location"><input className="fg-input" value={pi.location} placeholder="City, Country" onChange={(e) => setPersonal("location", e.target.value)} /></Field>
-        <Field label="LinkedIn"><input className="fg-input" value={pi.linkedin} placeholder="linkedin.com/in/you" onChange={(e) => setPersonal("linkedin", e.target.value)} /></Field>
-        <Field label="GitHub"><input className="fg-input" value={pi.github} placeholder="github.com/you" onChange={(e) => setPersonal("github", e.target.value)} /></Field>
-        <Field label="Portfolio / Website"><input className="fg-input" value={pi.portfolio} onChange={(e) => setPersonal("portfolio", e.target.value)} /></Field>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">Personal Information</h2>
+        <p className="fg-step__subtitle">Your contact information and professional summary.</p>
       </div>
 
-      <Field label="Professional Summary" hint="2-3 sentences. Highlight your focus, strengths, and what you are looking for.">
-        <textarea className="fg-input fg-input--textarea" rows={4} value={candidate.summary} onChange={(e) => setCandidate({ ...candidate, summary: e.target.value })} />
+      <div className="fg-field-grid">
+        <Field label="Full Name" required>
+          <input className="fg-input" value={pi.fullName}
+            onChange={(e) => setPersonal("fullName", e.target.value)}
+            placeholder="e.g. Jane Smith" />
+        </Field>
+        <Field label="Professional Title">
+          <input className="fg-input" value={pi.title}
+            onChange={(e) => setPersonal("title", e.target.value)}
+            placeholder="e.g. Software Engineer" />
+        </Field>
+        <Field label="Email" required>
+          <input className="fg-input" type="email" value={pi.email}
+            onChange={(e) => setPersonal("email", e.target.value)}
+            placeholder="jane@example.com" />
+        </Field>
+        <Field label="Phone">
+          <input className="fg-input" value={pi.phone}
+            onChange={(e) => setPersonal("phone", e.target.value)}
+            placeholder="+1 (555) 123-4567" />
+        </Field>
+        <Field label="Location">
+          <input className="fg-input" value={pi.location}
+            onChange={(e) => setPersonal("location", e.target.value)}
+            placeholder="City, Country" />
+        </Field>
+        <Field label="LinkedIn">
+          <input className="fg-input" value={pi.linkedin}
+            onChange={(e) => setPersonal("linkedin", e.target.value)}
+            placeholder="linkedin.com/in/you" />
+        </Field>
+        <Field label="GitHub">
+          <input className="fg-input" value={pi.github}
+            onChange={(e) => setPersonal("github", e.target.value)}
+            placeholder="github.com/you" />
+        </Field>
+        <Field label="Portfolio / Website">
+          <input className="fg-input" value={pi.portfolio}
+            onChange={(e) => setPersonal("portfolio", e.target.value)}
+            placeholder="yoursite.com" />
+        </Field>
+      </div>
+
+      <Field label="Professional Summary" hint="2-3 sentences about your focus, strengths, and goals.">
+        <textarea className="fg-input fg-input--textarea" rows={4} value={candidate.summary}
+          onChange={(e) => setCandidate({ ...candidate, summary: e.target.value })}
+          placeholder="Software engineer with 3+ years of experience in..." />
       </Field>
     </div>
   );
 }
 
 
-
+// ---------- Experience Step ----------
 function ExperienceStep({ candidate, addExperience, updateExperience, removeExperience }) {
   return (
     <div className="fg-step">
-      <span className="fg-step__eyebrow">STEP 3</span>
-      <h2 className="fg-step__title">Experience</h2>
-      <p className="fg-step__subtitle">Add internships, jobs, or research roles. Leave anything blank that does not apply.</p>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">Experience</h2>
+        <p className="fg-step__subtitle">Add internships, jobs, or research roles. Leave blank what doesn't apply.</p>
+      </div>
 
       {candidate.work_experience.length === 0 && (
-        <EmptyHelp title="No experience?" text="Add internships, academic research, hackathons, leadership roles or volunteering experience." />
+        <div className="fg-empty-state">
+          <p>No experience added yet. Add internships, academic research, hackathons, or volunteering.</p>
+        </div>
       )}
 
       {candidate.work_experience.map((exp, idx) => (
         <div className="fg-card-editor" key={exp.id}>
           <div className="fg-card-editor__head">
-            <span className="fg-badge">#{idx + 1}</span>
-            <input className="fg-input fg-input--ghost" placeholder="Role / Title" value={exp.role} onChange={(e) => updateExperience(exp.id, "role", e.target.value)} />
-            <button className="fg-btn-icon" onClick={() => removeExperience(exp.id)} title="Remove">×</button>
+            <span className="fg-badge">{idx + 1}</span>
+            <input className="fg-input fg-input--ghost" placeholder="Role / Title"
+              value={exp.role} onChange={(e) => updateExperience(exp.id, "role", e.target.value)} />
+            <button className="fg-btn-icon" onClick={() => removeExperience(exp.id)} title="Remove">
+              <X size={16} />
+            </button>
           </div>
-          <div className="fg-grid-2">
-            <Field label="Company / Organisation"><input className="fg-input" value={exp.company} onChange={(e) => updateExperience(exp.id, "company", e.target.value)} /></Field>
-            <Field label="Location"><input className="fg-input" value={exp.location} onChange={(e) => updateExperience(exp.id, "location", e.target.value)} /></Field>
-            <Field label="Start date"><input className="fg-input" placeholder="Jun 2024" value={exp.startDate} onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)} /></Field>
-            <Field label="End date"><input className="fg-input" placeholder="Aug 2024 or Present" value={exp.endDate} onChange={(e) => updateExperience(exp.id, "endDate", e.target.value)} /></Field>
+          <div className="fg-field-grid">
+            <Field label="Company">
+              <input className="fg-input" value={exp.company}
+                onChange={(e) => updateExperience(exp.id, "company", e.target.value)} />
+            </Field>
+            <Field label="Location">
+              <input className="fg-input" value={exp.location}
+                onChange={(e) => updateExperience(exp.id, "location", e.target.value)} />
+            </Field>
+            <Field label="Start date">
+              <input className="fg-input" placeholder="Jun 2024" value={exp.startDate}
+                onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)} />
+            </Field>
+            <Field label="End date">
+              <input className="fg-input" placeholder="Aug 2024 or Present" value={exp.endDate}
+                onChange={(e) => updateExperience(exp.id, "endDate", e.target.value)} />
+            </Field>
           </div>
-          <Field label="Key contributions" hint="Use action verbs. The AI will refine these but never invent metrics or facts.">
-            <textarea className="fg-input fg-input--textarea" rows={4} value={exp.description} onChange={(e) => updateExperience(exp.id, "description", e.target.value)} placeholder="e.g. Built a feature flag system in Go that reduced deploy downtime by 30%." />
+          <Field label="Key contributions" hint="Use action verbs. The AI will refine these but won't invent facts.">
+            <textarea className="fg-input fg-input--textarea" rows={4} value={exp.description}
+              onChange={(e) => updateExperience(exp.id, "description", e.target.value)}
+              placeholder="e.g. Built a feature flag system in Go that reduced deploy downtime by 30%." />
           </Field>
         </div>
       ))}
 
-      <button className="fg-btn fg-btn--ghost fg-btn--block" onClick={addExperience}>+ Add Experience</button>
+      <button className="fg-btn fg-btn--ghost fg-btn--block" onClick={addExperience}>
+        + Add Experience
+      </button>
     </div>
   );
 }
 
+
+// ---------- Education Step ----------
 function EducationStep({ candidate, addEducation, updateEducation, removeEducation }) {
   return (
     <div className="fg-step">
-      <span className="fg-step__eyebrow">STEP 4</span>
-      <h2 className="fg-step__title">Education</h2>
-      <p className="fg-step__subtitle">Schools, degrees, dates - GPA is optional.</p>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">Education</h2>
+        <p className="fg-step__subtitle">Schools, degrees, and dates. GPA is optional.</p>
+      </div>
+
+      {candidate.education.length === 0 && (
+        <div className="fg-empty-state">
+          <p>No education added yet. Add your degrees and certifications.</p>
+        </div>
+      )}
 
       {candidate.education.map((ed, idx) => (
         <div className="fg-card-editor" key={ed.id}>
           <div className="fg-card-editor__head">
-            <span className="fg-badge">#{idx + 1}</span>
-            <input className="fg-input fg-input--ghost" placeholder="School / University" value={ed.school} onChange={(e) => updateEducation(ed.id, "school", e.target.value)} />
-            <button className="fg-btn-icon" onClick={() => removeEducation(ed.id)} title="Remove">×</button>
+            <span className="fg-badge">{idx + 1}</span>
+            <input className="fg-input fg-input--ghost" placeholder="School / University"
+              value={ed.school} onChange={(e) => updateEducation(ed.id, "school", e.target.value)} />
+            <button className="fg-btn-icon" onClick={() => removeEducation(ed.id)} title="Remove">
+              <X size={16} />
+            </button>
           </div>
-          <div className="fg-grid-2">
-            <Field label="Degree"><input className="fg-input" value={ed.degree} onChange={(e) => updateEducation(ed.id, "degree", e.target.value)} placeholder="e.g. Bachelor of Technology" /></Field>
-            <Field label="Field of study"><input className="fg-input" value={ed.field} onChange={(e) => updateEducation(ed.id, "field", e.target.value)} placeholder="Computer Science" /></Field>
-            <Field label="Start year"><input className="fg-input" value={ed.startDate} placeholder="2022" onChange={(e) => updateEducation(ed.id, "startDate", e.target.value)} /></Field>
-            <Field label="End year"><input className="fg-input" value={ed.endDate} placeholder="2026" onChange={(e) => updateEducation(ed.id, "endDate", e.target.value)} /></Field>
-            <Field label="GPA / CGPA (optional)"><input className="fg-input" value={ed.gpa} placeholder="3.8 / 4.0" onChange={(e) => updateEducation(ed.id, "gpa", e.target.value)} /></Field>
-            <Field label="Location"><input className="fg-input" value={ed.location} onChange={(e) => updateEducation(ed.id, "location", e.target.value)} /></Field>
+          <div className="fg-field-grid">
+            <Field label="Degree">
+              <input className="fg-input" value={ed.degree} placeholder="Bachelor of Technology"
+                onChange={(e) => updateEducation(ed.id, "degree", e.target.value)} />
+            </Field>
+            <Field label="Field of study">
+              <input className="fg-input" value={ed.field} placeholder="Computer Science"
+                onChange={(e) => updateEducation(ed.id, "field", e.target.value)} />
+            </Field>
+            <Field label="Start year">
+              <input className="fg-input" value={ed.startDate} placeholder="2022"
+                onChange={(e) => updateEducation(ed.id, "startDate", e.target.value)} />
+            </Field>
+            <Field label="End year">
+              <input className="fg-input" value={ed.endDate} placeholder="2026"
+                onChange={(e) => updateEducation(ed.id, "endDate", e.target.value)} />
+            </Field>
+            <Field label="GPA (optional)">
+              <input className="fg-input" value={ed.gpa} placeholder="3.8 / 4.0"
+                onChange={(e) => updateEducation(ed.id, "gpa", e.target.value)} />
+            </Field>
+            <Field label="Location">
+              <input className="fg-input" value={ed.location}
+                onChange={(e) => updateEducation(ed.id, "location", e.target.value)} />
+            </Field>
           </div>
         </div>
       ))}
 
-      <button className="fg-btn fg-btn--ghost fg-btn--block" onClick={addEducation}>+ Add Education</button>
+      <button className="fg-btn fg-btn--ghost fg-btn--block" onClick={addEducation}>
+        + Add Education
+      </button>
     </div>
   );
 }
 
+
+// ---------- Skills Step ----------
 function SkillsStep({ candidate, setSkillsText }) {
   const text = Array.isArray(candidate.skills) ? candidate.skills.join(", ") : "";
   return (
     <div className="fg-step">
-      <span className="fg-step__eyebrow">STEP 5</span>
-      <h2 className="fg-step__title">Skills</h2>
-      <p className="fg-step__subtitle">Type any skills you have. Separate them with commas - the AI will group them later.</p>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">Skills</h2>
+        <p className="fg-step__subtitle">List your skills separated by commas. The AI will group them later.</p>
+      </div>
+
       <Field label="Your skills" hint="e.g. JavaScript, React, Python, Figma, Leadership">
-        <textarea className="fg-input fg-input--textarea" rows={5} value={text} onChange={(e) => setSkillsText(e.target.value)} placeholder="TypeScript, React, Node.js, Python, PostgreSQL, Docker" />
+        <textarea className="fg-input fg-input--textarea" rows={5} value={text}
+          onChange={(e) => setSkillsText(e.target.value)}
+          placeholder="TypeScript, React, Node.js, Python, PostgreSQL, Docker" />
       </Field>
+
       {Array.isArray(candidate.skills) && candidate.skills.length > 0 && (
         <div className="fg-chip-row">
-          {candidate.skills.map((s, i) => (<span key={i} className="fg-chip">{s}</span>))}
+          {candidate.skills.map((s, i) => (
+            <span key={i} className="fg-chip">{s}</span>
+          ))}
         </div>
       )}
     </div>
@@ -589,62 +819,92 @@ function SkillsStep({ candidate, setSkillsText }) {
 }
 
 
-
+// ---------- Projects Step ----------
 function ProjectsStep({ candidate, addProject, updateProject, removeProject }) {
   return (
     <div className="fg-step">
-      <span className="fg-step__eyebrow">STEP 6</span>
-      <h2 className="fg-step__title">Projects</h2>
-      <p className="fg-step__subtitle">Academic, personal, hackathon or open-source projects. Tools used matter.</p>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">Projects</h2>
+        <p className="fg-step__subtitle">Academic, personal, hackathon, or open-source projects.</p>
+      </div>
 
       {candidate.projects.length === 0 && (
-        <EmptyHelp title="First-time resume?" text="Add 2-3 projects from coursework, internships or your own builds. The AI will not invent anything you did not write." />
+        <div className="fg-empty-state">
+          <p>Add 2-3 projects from coursework, internships, or your own builds.</p>
+        </div>
       )}
 
       {candidate.projects.map((p, idx) => (
         <div className="fg-card-editor" key={p.id}>
           <div className="fg-card-editor__head">
-            <span className="fg-badge">#{idx + 1}</span>
-            <input className="fg-input fg-input--ghost" placeholder="Project name" value={p.name} onChange={(e) => updateProject(p.id, "name", e.target.value)} />
-            <button className="fg-btn-icon" onClick={() => removeProject(p.id)} title="Remove">×</button>
+            <span className="fg-badge">{idx + 1}</span>
+            <input className="fg-input fg-input--ghost" placeholder="Project name"
+              value={p.name} onChange={(e) => updateProject(p.id, "name", e.target.value)} />
+            <button className="fg-btn-icon" onClick={() => removeProject(p.id)} title="Remove">
+              <X size={16} />
+            </button>
           </div>
-          <div className="fg-grid-2">
-            <Field label="Technologies used"><input className="fg-input" value={p.techStack} onChange={(e) => updateProject(p.id, "techStack", e.target.value)} placeholder="React, Node.js, Docker" /></Field>
-            <Field label="Project link"><input className="fg-input" value={p.link} onChange={(e) => updateProject(p.id, "link", e.target.value)} placeholder="github.com/you/project" /></Field>
+          <div className="fg-field-grid">
+            <Field label="Technologies used">
+              <input className="fg-input" value={p.techStack}
+                onChange={(e) => updateProject(p.id, "techStack", e.target.value)}
+                placeholder="React, Node.js, Docker" />
+            </Field>
+            <Field label="Project link">
+              <input className="fg-input" value={p.link}
+                onChange={(e) => updateProject(p.id, "link", e.target.value)}
+                placeholder="github.com/you/project" />
+            </Field>
           </div>
-          <Field label="What it does" hint="1-3 sentences. What problem did it solve? What did you build?">
-            <textarea className="fg-input fg-input--textarea" rows={3} value={p.description} onChange={(e) => updateProject(p.id, "description", e.target.value)} />
+          <Field label="Description" hint="1-3 sentences. What problem did it solve?">
+            <textarea className="fg-input fg-input--textarea" rows={3} value={p.description}
+              onChange={(e) => updateProject(p.id, "description", e.target.value)} />
           </Field>
         </div>
       ))}
 
-      <button className="fg-btn fg-btn--ghost fg-btn--block" onClick={addProject}>+ Add Project</button>
+      <button className="fg-btn fg-btn--ghost fg-btn--block" onClick={addProject}>
+        + Add Project
+      </button>
     </div>
   );
 }
 
+
+// ---------- Target Step ----------
 function TargetStep({ job, setJob }) {
   return (
     <div className="fg-step">
-      <span className="fg-step__eyebrow">STEP 7</span>
-      <h2 className="fg-step__title">Target Role</h2>
-      <p className="fg-step__subtitle">Optional but powerful - let the AI tailor your resume to a specific role.</p>
-
-      <div className="fg-grid-2">
-        <Field label="Job Role"><input className="fg-input" value={job.role} onChange={(e) => setJob({ ...job, role: e.target.value })} placeholder="Software Engineer" /></Field>
-        <Field label="Company (optional)"><input className="fg-input" value={job.company} onChange={(e) => setJob({ ...job, company: e.target.value })} /></Field>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">Target Role</h2>
+        <p className="fg-step__subtitle">Optional but powerful — let the AI tailor your resume to a specific role.</p>
       </div>
 
-      <Field label="Job Description" hint="Paste the full posting. The AI will extract keywords and weave them in naturally - never stuffing.">
-        <textarea className="fg-input fg-input--textarea" rows={10} value={job.description} onChange={(e) => setJob({ ...job, description: e.target.value })} placeholder="Paste the job description here..." />
+      <div className="fg-field-grid">
+        <Field label="Job Role">
+          <input className="fg-input" value={job.role}
+            onChange={(e) => setJob({ ...job, role: e.target.value })}
+            placeholder="Software Engineer" />
+        </Field>
+        <Field label="Company (optional)">
+          <input className="fg-input" value={job.company}
+            onChange={(e) => setJob({ ...job, company: e.target.value })}
+            placeholder="Google" />
+        </Field>
+      </div>
+
+      <Field label="Job Description" hint="Paste the full posting. The AI will extract keywords and weave them in naturally.">
+        <textarea className="fg-input fg-input--textarea" rows={10} value={job.description}
+          onChange={(e) => setJob({ ...job, description: e.target.value })}
+          placeholder="Paste the job description here..." />
       </Field>
     </div>
   );
 }
 
 
-
-function GenerateStep({ generating, generationSteps, onGenerate, onBack }) {
+// ---------- Generate Step ----------
+function GenerateStep({ generating, generationSteps, onGenerate }) {
   const labels = {
     loading_rules: "Loading rule layers",
     analyzing_inputs: "Analyzing the role",
@@ -655,46 +915,63 @@ function GenerateStep({ generating, generationSteps, onGenerate, onBack }) {
 
   return (
     <div className="fg-step fg-step--centered">
-      <span className="fg-step__eyebrow">STEP 8</span>
-      <h2 className="fg-step__title">Generate your resume</h2>
-      <p className="fg-step__subtitle">The AI will draft a tailored resume using the data you entered. Nothing is fabricated - gaps stay gaps.</p>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">Generate your resume</h2>
+        <p className="fg-step__subtitle">
+          The AI will draft a tailored resume using the data you entered. Nothing is fabricated — gaps stay gaps.
+        </p>
+      </div>
 
       {!generating && (
-        <button className="fg-btn fg-btn--primary fg-btn--large" onClick={onGenerate}>⚡ Generate My Resume</button>
+        <button className="fg-btn fg-btn--primary fg-btn--lg" onClick={onGenerate}>
+          Generate My Resume
+        </button>
       )}
 
       {generating && (
-        <div className="fg-progress">
-          <div className="fg-progress__spinner" />
-          <ol className="fg-progress__steps">
+        <div className="fg-generating">
+          <div className="fg-generating__spinner" />
+          <div className="fg-generating__steps">
             {Object.keys(labels).map((key) => {
-              const reached = generationSteps.indexOf(key) === -1;
+              const isDone = generationSteps.indexOf(key) === -1;
+              const isActive = !isDone && generationSteps[0] === key;
               return (
-                <li key={key} className={reached ? "is-done" : "is-active"}>
-                  <span className="fg-progress__bullet">{reached ? "✓" : "●"}</span>
-                  {labels[key]}
-                </li>
+                <div key={key}
+                  className={`fg-generating__step ${isDone ? "is-done" : ""} ${isActive ? "is-active" : ""}`}>
+                  <span className="fg-generating__bullet">
+                    {isDone ? <Check size={10} /> : <span />}
+                  </span>
+                  <span>{labels[key]}</span>
+                </div>
               );
             })}
-          </ol>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function ReviewStep({ generated, warnings, versionName, setVersionName, templateId, setTemplateId, templates, savedId, onSave, onExport, onReEdit }) {
+
+// ---------- Review Step ----------
+function ReviewStep({ generated, warnings, versionName, setVersionName, templateId, setTemplateId,
+                     templates, savedId, onSave, onExport, onReEdit }) {
   const [exportFormat, setExportFormat] = useState("docx");
   return (
     <div className="fg-step">
-      <span className="fg-step__eyebrow">STEP 9</span>
-      <h2 className="fg-step__title">Review &amp; Export</h2>
-      <p className="fg-step__subtitle">The live preview on the right reflects the final, ATS-friendly output.</p>
+      <div className="fg-step__header">
+        <h2 className="fg-step__title">Review &amp; Export</h2>
+        <p className="fg-step__subtitle">The live preview reflects your final, ATS-friendly output.</p>
+      </div>
 
-      <div className="fg-grid-2">
-        <Field label="Version name"><input className="fg-input" value={versionName} onChange={(e) => setVersionName(e.target.value)} /></Field>
+      <div className="fg-field-grid">
+        <Field label="Version name">
+          <input className="fg-input" value={versionName}
+            onChange={(e) => setVersionName(e.target.value)} />
+        </Field>
         <Field label="Template">
-          <select className="fg-input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+          <select className="fg-input" value={templateId}
+            onChange={(e) => setTemplateId(e.target.value)}>
             {(templates.length ? templates : [
               { id: "classic", label: "Classic" },
               { id: "professional", label: "Professional" },
@@ -708,32 +985,45 @@ function ReviewStep({ generated, warnings, versionName, setVersionName, template
       </div>
 
       {warnings && warnings.length > 0 && (
-        <div className="fg-warning-list">
-          <strong>Heads up:</strong>
-          <ul>{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+        <div className="fg-warning-box">
+          <AlertCircle size={14} />
+          <div>
+            <strong>Heads up:</strong>
+            <ul>{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+          </div>
         </div>
       )}
 
       {!generated && (
-        <div className="fg-empty-info">
-          You have not generated a resume yet. Go back to <button className="fg-link" onClick={onReEdit}>personal info</button> or run generation from the previous step.
+        <div className="fg-empty-state">
+          <p>You haven't generated a resume yet. Go back to
+            <button className="fg-link" onClick={onReEdit}> personal info </button>
+            or run generation from the previous step.
+          </p>
         </div>
       )}
 
-      <div className="fg-action-row">
-        <button className="fg-btn fg-btn--ghost" onClick={onSave}>{savedId ? "Update" : "Save"}</button>
-        <select className="fg-input fg-input--inline" value={exportFormat} onChange={(e) => setExportFormat(e.target.value)}>
-          <option value="docx">DOCX</option>
-          <option value="pdf">PDF</option>
-          <option value="md">Markdown</option>
-          <option value="json">JSON</option>
-        </select>
-        <button className="fg-btn fg-btn--primary" disabled={!savedId} onClick={() => onExport(exportFormat)}>Export {exportFormat.toUpperCase()}</button>
+      <div className="fg-review-actions">
+        <button className="fg-btn fg-btn--ghost" onClick={onSave}>
+          <Save size={14} /> {savedId ? "Update" : "Save"}
+        </button>
+        <div className="fg-export-group">
+          <select className="fg-input fg-input--inline" value={exportFormat}
+            onChange={(e) => setExportFormat(e.target.value)}>
+            <option value="docx">DOCX</option>
+            <option value="pdf">PDF</option>
+            <option value="md">Markdown</option>
+            <option value="json">JSON</option>
+          </select>
+          <button className="fg-btn fg-btn--primary" disabled={!savedId}
+            onClick={() => onExport(exportFormat)}>
+            <Download size={14} /> Export {exportFormat.toUpperCase()}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
-
 
 
 // ---------- Live Preview ----------
@@ -744,13 +1034,25 @@ function LivePreview({ candidate, job, templateId, generated }) {
     return candidateToPreview(candidate, job, templateId);
   }, [generated, candidate, job, templateId]);
 
+  const hasContent = candidate.personal_info.fullName || candidate.personal_info.email
+    || candidate.work_experience.length || candidate.education.length || candidate.skills.length;
+
+  if (!hasContent && !generated) {
+    return (
+      <div className="fg-preview-empty">
+        <FileText size={32} />
+        <p>Your resume preview will appear here as you fill in the sections.</p>
+      </div>
+    );
+  }
+
   return (
     <article ref={ref} className={`fg-resume fg-resume--${templateId}`}>
       <header className="fg-resume__head">
         <h1>{view?.header?.full_name || candidate.personal_info.fullName || "Your Name"}</h1>
         {view?.header?.title && <div className="fg-resume__title">{view.header.title}</div>}
         {(view?.header?.contacts || []).length > 0 && (
-          <div className="fg-resume__contacts">{(view.header.contacts || []).filter(Boolean).join(" · ")}</div>
+          <div className="fg-resume__contacts">{(view.header.contacts || []).filter(Boolean).join(" \u00B7 ")}</div>
         )}
       </header>
 
@@ -779,7 +1081,7 @@ function LivePreview({ candidate, job, templateId, generated }) {
                 <strong>{exp.role}</strong>
                 <span>{exp.company}</span>
               </div>
-              <div className="fg-resume__entry-meta">{exp.start_date} – {exp.end_date}</div>
+              <div className="fg-resume__entry-meta">{exp.start_date} \u2013 {exp.end_date}</div>
               {(exp.highlights || []).length > 0 && (
                 <ul>{(exp.highlights || []).map((h, idx) => <li key={idx}>{h}</li>)}</ul>
               )}
@@ -798,7 +1100,7 @@ function LivePreview({ candidate, job, templateId, generated }) {
                 <span>{e.degree}{e.field ? `, ${e.field}` : ""}</span>
               </div>
               {(e.start_date || e.end_date) && (
-                <div className="fg-resume__entry-meta">{e.start_date} – {e.end_date}</div>
+                <div className="fg-resume__entry-meta">{e.start_date} \u2013 {e.end_date}</div>
               )}
             </div>
           ))}
@@ -836,29 +1138,20 @@ function candidateToPreview(candidate, job, templateId) {
       start_date: e.startDate, end_date: e.endDate,
     })),
     optional_sections: (candidate.projects || []).length
-      ? [{ title: "Projects", items: candidate.projects.map((p) => `${p.name} — ${p.techStack}: ${p.description}`) }]
+      ? [{ title: "Projects", items: candidate.projects.map((p) => `${p.name} \u2014 ${p.techStack}: ${p.description}`) }]
       : [],
   };
 }
 
 
-// ---------- Small UI helpers ----------
+// ---------- Shared UI ----------
 function Field({ label, required, hint, children }) {
   return (
     <label className="fg-field">
-      <span className="fg-field__label">{label} {required && <em className="fg-required">*</em>}</span>
+      <span className="fg-field__label">{label}{required && <em className="fg-required">*</em>}</span>
       {children}
       {hint && <span className="fg-field__hint">{hint}</span>}
     </label>
-  );
-}
-
-function EmptyHelp({ title, text }) {
-  return (
-    <div className="fg-empty-help">
-      <strong>{title}</strong>
-      <p>{text}</p>
-    </div>
   );
 }
 

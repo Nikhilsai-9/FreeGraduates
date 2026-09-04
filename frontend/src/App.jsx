@@ -18,7 +18,7 @@ import "./components/ResumeBuilder.css";
 // Unified Authenticated Workspace Layout
 function AuthenticatedWorkspace() {
   const { currentUser, logout } = useAuth();
-  const [activeView, setActiveView] = useState("dashboard"); // 'dashboard' | 'builder' | 'analyzer' | 'ats-checker' | 'coach' | 'history'
+  const [activeView, setActiveView] = useState("dashboard"); // 'dashboard' | 'builder' | 'analyzer' | 'ats-checker' | 'optimizer' | 'coach' | 'history'
   const [collapsed, setCollapsed] = useState(false);
   const [builderOptions, setBuilderOptions] = useState({
     resumeId: null,
@@ -82,6 +82,12 @@ function AuthenticatedWorkspace() {
           )}
 
           {activeView === "ats-checker" && (
+            <ResumeAnalyzerView
+              onBackToDashboard={() => setActiveView("dashboard")}
+            />
+          )}
+
+          {activeView === "optimizer" && (
             <ResumeAnalyzerView
               onBackToDashboard={() => setActiveView("dashboard")}
             />
