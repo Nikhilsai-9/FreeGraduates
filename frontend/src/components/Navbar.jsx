@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import Logo from "./Logo";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -106,7 +105,12 @@ export default function Navbar() {
         <div className="nav-container-fluid">
           {/* Brand Logo - Aligned to Left Corner */}
           <Link to="/" className="brand-logo-group" aria-label="FreeGraduates Home" onClick={closeMobileMenu}>
-            <Logo size={36} />
+            <div className="brand-logo-mark">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 23V9h14M9 16h10M15 9l8 8" />
+              </svg>
+            </div>
+            <span className="brand-logo-name">Free<span>Graduates</span></span>
           </Link>
 
           {/* Center Navigation Links (when not on dashboard or as general nav) */}
