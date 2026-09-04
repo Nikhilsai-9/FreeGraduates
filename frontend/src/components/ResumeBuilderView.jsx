@@ -3,7 +3,7 @@
 // Professional 3-column workspace: step nav | editor | live preview
 // =====================================================================
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { resumeApi, ExtractError } from "../api/api";
 import {
   FileText, Upload, PenTool, Layout, ChevronRight, ChevronLeft,
