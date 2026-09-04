@@ -76,7 +76,7 @@ export default function Results() {
               <span className="verdict-eyebrow">Recruiter Verdict</span>
               <h2 className="verdict-title">{data?.verdict || "Match Evaluated"}</h2>
               <div className="resume-meta-name">
-                📄 {data?.originalName || "Uploaded Resume"} &bull;{" "}
+                {data?.originalName || "Uploaded Resume"} &bull;{" "}
                 {new Date(data?.createdAt || Date.now()).toLocaleDateString(undefined, {
                   month: "short",
                   day: "numeric",

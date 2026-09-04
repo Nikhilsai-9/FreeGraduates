@@ -1,4 +1,5 @@
 import React from "react";
+import { Mail, Phone, MapPin, ExternalLink, Code2, Globe } from "lucide-react";
 import "./ParsedDataView.css";
 
 export default function ParsedDataView({ data = {} }) {
@@ -17,12 +18,24 @@ export default function ParsedDataView({ data = {} }) {
         <div className="parsed-header-block">
           <h3 className="parsed-name">{contact?.name || "Candidate Name"}</h3>
           <div className="parsed-meta-links">
-            {contact?.email && <span>✉ {contact.email}</span>}
-            {contact?.phone && <span>📞 {contact.phone}</span>}
-            {contact?.location && <span>📍 {contact.location}</span>}
-            {contact?.linkedin && <span>🔗 {contact.linkedin}</span>}
-            {contact?.github && <span>🐙 {contact.github}</span>}
-            {contact?.portfolio && <span>🌐 {contact.portfolio}</span>}
+            {contact?.email && (
+              <span><Mail size={13} /> {contact.email}</span>
+            )}
+            {contact?.phone && (
+              <span><Phone size={13} /> {contact.phone}</span>
+            )}
+            {contact?.location && (
+              <span><MapPin size={13} /> {contact.location}</span>
+            )}
+            {contact?.linkedin && (
+              <span><ExternalLink size={13} /> {contact.linkedin}</span>
+            )}
+            {contact?.github && (
+              <span><Code2 size={13} /> {contact.github}</span>
+            )}
+            {contact?.portfolio && (
+              <span><Globe size={13} /> {contact.portfolio}</span>
+            )}
           </div>
         </div>
 

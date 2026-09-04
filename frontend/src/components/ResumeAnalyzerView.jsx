@@ -255,7 +255,7 @@ export default function ResumeAnalyzerView({ onBackToDashboard }) {
                           <>
                             <span className="diff-strike">Engineered scalable REST APIs in Node.js and Go, reducing query latency by 34%.</span>{" "}
                             <span className="diff-highlight verb-upgrade pending">
-                              [➜ Architected high-throughput RESTful services and gRPC endpoints in Node.js & Go, slashing p99 latency by 34%]
+                              [Architected high-throughput RESTful services and gRPC endpoints in Node.js & Go, slashing p99 latency by 34%]
                             </span>
                           </>
                         );
@@ -347,8 +347,8 @@ export default function ResumeAnalyzerView({ onBackToDashboard }) {
                   <div className="card-top-row">
                     <span className={`diff-type-badge ${diff.type}`}>
                       {diff.type === "addition" && "+ ADDITION"}
-                      {diff.type === "verb_enhancement" && "⚡ VERB UPGRADE"}
-                      {diff.type === "deletion" && "✕ CONDENSATION"}
+                      {diff.type === "verb_enhancement" && "VERB UPGRADE"}
+                      {diff.type === "deletion" && "CONDENSATION"}
                     </span>
                     <span className="diff-step-index">Change #{index + 1}</span>
                   </div>
@@ -384,7 +384,7 @@ export default function ResumeAnalyzerView({ onBackToDashboard }) {
                       onClick={() => setDiffStatus(diff.id, "accepted")}
                     >
                       <Check size={15} />
-                      <span>{isAccepted ? "Accepted ✓" : "Accept Change"}</span>
+                      <span>{isAccepted ? "Accepted" : "Accept Change"}</span>
                     </button>
                   </div>
                 </div>

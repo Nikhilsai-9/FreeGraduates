@@ -84,7 +84,6 @@ body {
   border-right: 1px solid var(--color-card-border);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
   flex-shrink: 0;
@@ -137,63 +136,112 @@ body {
 }
 
 .sidebar-nav-container {
-  padding: 16px 10px;
+  padding: 14px 10px;
   flex-grow: 1;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sidebar-nav-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav-container::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: var(--radius-pill);
+}
+
+.sidebar-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .nav-group-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
   color: var(--color-ink-tertiary);
-  padding: 6px 12px;
-  margin-bottom: 6px;
+  padding: 0 12px;
 }
 
 .nav-items-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .nav-item-btn {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-radius: var(--radius-md);
   border: none;
   background: none;
   color: var(--color-ink-secondary);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: all 0.15s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
   white-space: nowrap;
+  position: relative;
+}
+
+.nav-item-btn .nav-icon {
+  color: var(--color-ink-tertiary);
+  flex-shrink: 0;
+  transition: color 0.12s ease;
 }
 
 .nav-item-btn:hover {
-  background-color: var(--color-signal-blue-light);
-  color: var(--color-signal-blue);
+  background-color: rgba(148, 163, 184, 0.1);
+  color: var(--color-ink-primary);
+}
+
+.nav-item-btn:hover .nav-icon {
+  color: var(--color-ink-secondary);
 }
 
 .nav-item-btn.active {
-  background-color: var(--color-signal-blue-light);
+  background: linear-gradient(
+    90deg,
+    rgba(26, 145, 240, 0.12),
+    rgba(26, 145, 240, 0.05)
+  );
   color: var(--color-signal-blue);
   font-weight: 700;
+}
+
+.nav-item-btn.active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-signal-blue);
+}
+
+.nav-item-btn.active .nav-icon {
+  color: var(--color-signal-blue);
 }
 
 .nav-item-badge {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
   background-color: var(--color-emerald-light);
   color: var(--color-emerald-text);
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: var(--radius-pill);
 }
 
@@ -203,6 +251,50 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.sidebar-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 6px;
+}
+
+.profile-avatar-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-signal-blue);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-role {
+  font-size: 11px;
+  color: var(--color-ink-tertiary);
+  white-space: nowrap;
 }
 
 .sidebar-collapse-toggle-btn,
@@ -218,7 +310,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
 }
 
 .sidebar-collapse-toggle-btn:hover {
@@ -229,6 +321,26 @@ body {
 .sidebar-signout-btn:hover {
   background-color: var(--color-crimson-light);
   color: var(--color-crimson-text);
+}
+
+.sidebar-help-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-ink-tertiary);
+}
+
+.sidebar-help-note a {
+  color: var(--color-signal-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sidebar-help-note a:hover {
+  text-decoration: underline;
 }
 
 /* ==========================================================

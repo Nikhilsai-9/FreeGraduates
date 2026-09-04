@@ -88,7 +88,7 @@ export default function Login() {
 
         {resetSent && (
           <div className="reset-alert-success">
-            ✓ Password reset link sent to {email}. Check your inbox.
+            Password reset link sent to {email}. Check your inbox.
           </div>
         )}
 

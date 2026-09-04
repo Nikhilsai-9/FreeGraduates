@@ -43,6 +43,7 @@ function AuthenticatedWorkspace() {
         setActiveView={setActiveView}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
+        currentUser={currentUser}
         onLogout={logout}
       />
 

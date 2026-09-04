@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { FileText, FolderOpen } from "lucide-react";
 import { resumeApi } from "../api/api";
 import Toast from "../components/Toast";
 import "./History.css";
@@ -82,7 +83,7 @@ export default function History() {
               <div key={item._id} className="ui-card history-card">
                 <div className="history-card-top">
                   <div className="history-card-file">
-                    <div className="file-icon-badge">📄</div>
+                    <div className="file-icon-badge"><FileText size={18} /></div>
                     <div>
                       <h3 className="history-card-filename">{item.originalName || "Resume Document"}</h3>
                       <div className="history-card-date">
@@ -123,7 +124,7 @@ export default function History() {
           </div>
         ) : (
           <div className="ui-card empty-history-card">
-            <div className="empty-icon">📁</div>
+            <div className="empty-icon"><FolderOpen size={34} /></div>
             <h3>No past analyses found</h3>
             <p>Upload a resume and job description to generate your first ATS analysis.</p>
             <Link to="/" className="btn btn-primary" style={{ marginTop: "18px" }}>
