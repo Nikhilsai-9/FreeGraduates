@@ -5,25 +5,24 @@
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 1000;
-  background-color: rgba(255, 255, 255, 0.94);
+  z-index: 999;
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-chalk);
-  height: 72px;
+  border-bottom: 1px solid var(--color-ash);
+  height: 70px;
   display: flex;
   align-items: center;
 }
 
-/* Fluid navigation container centered at the page max-width */
+/* Fluid navigation container stretching across top with margin padding */
 .nav-container-fluid {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 1200px;
-  margin-inline: auto;
-  padding-inline: 24px;
+  max-width: 100%;
+  padding-inline: 28px;
 }
 
 @media (max-width: 768px) {
@@ -34,9 +33,9 @@
 
 /* Brand Logo Group - positioned cleanly at left corner */
 .brand-logo-group {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   text-decoration: none;
   cursor: pointer;
   flex-shrink: 0;
@@ -45,13 +44,13 @@
 .brand-logo-mark {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 9px;
   background-color: var(--color-signal-blue);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(26, 145, 240, 0.25);
   transition: transform 0.2s ease;
 }
 
@@ -60,10 +59,10 @@
 }
 
 .brand-logo-name {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 900;
   color: var(--color-carbon);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .brand-logo-name span {
@@ -80,52 +79,52 @@
   list-style: none;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 4px;
   margin: 0;
   padding: 0;
 }
 
 .nav-link {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--color-ink);
-  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-pencil);
+  padding: 8px 14px;
   border-radius: var(--radius-tags);
   transition: all 0.15s ease;
   text-decoration: none;
-  white-space: nowrap;
 }
 
 .nav-link:hover {
   color: var(--color-signal-blue);
+  background-color: var(--color-lavender-wash);
 }
 
 .nav-link.active-nav {
   color: var(--color-signal-blue);
-  font-weight: 600;
+  background-color: var(--color-lavender-wash);
+  font-weight: 700;
 }
 
 /* Right Nav Actions */
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   flex-shrink: 0;
 }
 
 .nav-login-btn {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--color-ink);
-  padding: 8px 16px;
-  border-radius: var(--radius-buttons);
-  transition: all 0.15s ease;
+  padding: 8px 14px;
+  border-radius: var(--radius-tags);
+  transition: color 0.15s ease;
   text-decoration: none;
 }
 
 .nav-login-btn:hover {
   color: var(--color-signal-blue);
-  background-color: var(--color-mist);
 }
 
 .nav-divider {
@@ -442,7 +441,7 @@
 /* Mobile Drawer */
 .mobile-nav-drawer {
   position: fixed;
-  top: 72px;
+  top: 70px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -496,7 +495,7 @@
   border-top: 1px solid var(--color-ash);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 960px) {
   .desktop-main-nav {
     display: none;
   }
