@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -18,8 +18,21 @@ import "./components/ResumeBuilder.css";
 // Unified Authenticated Workspace Layout
 function AuthenticatedWorkspace() {
   const { currentUser, logout } = useAuth();
-  const [activeView, setActiveView] = useState("dashboard"); // 'dashboard' | 'builder' | 'analyzer' | 'ats-checker' | 'optimizer' | 'coach' | 'history'
+  const location = useLocation();
+  const routeView = location.pathname.startsWith("/builder")
+    ? "builder"
+    : location.pathname.startsWith("/dashboard")
+      ? "dashboard"
+      : null;
+  const [activeView, setActiveView] = useState(routeView || "dashboard"); // 'dashboard' | 'builder' | 'analyzer' | 'ats-checker' | 'optimizer' | 'coach' | 'history'
   const [collapsed, setCollapsed] = useState(false);
+
+  // Keep the view in sync when the URL changes (deep links, back/forward).
+  useEffect(() => {
+    if (routeView && routeView !== activeView) {
+      setActiveView(routeView);
+    }
+  }, [routeView, activeView]);
   const [builderOptions, setBuilderOptions] = useState({
     resumeId: null,
     creationPath: "form",
