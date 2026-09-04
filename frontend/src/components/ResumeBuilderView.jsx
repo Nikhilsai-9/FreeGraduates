@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { resumeApi, ExtractError } from "../api/api";
 import {
   FileText, Upload, PenTool, Layout, ChevronRight, ChevronLeft,
-  Check, X, AlertCircle, RefreshCw, File, Download, Save, Eye
+  Check, X, AlertCircle, RefreshCw, Download, Save, Eye, ZoomIn, ZoomOut
 } from "lucide-react";
 
 // ---------- Candidate shape (matches backend) ----------
@@ -41,6 +41,10 @@ const newProject = () => ({
   description: "", link: "",
 });
 
+// A4 sheet at 96dpi: 210mm x 297mm
+const A4_W = 794;
+const A4_H = 1123;
+
 // ---------- Step definitions ----------
 const STEPS = [
   { id: "start",      label: "Start",        icon: PenTool },
@@ -61,7 +65,7 @@ function getStepIndex(id) {
 }
 
 // ---------- Main Component ----------
-export default function ResumeBuilderView({ onBackToDashboard, initialOptions }) {
+export default function ResumeBuilderView({ initialOptions }) {
   const [candidate, setCandidate] = useState(newCandidate());
   const [job, setJob] = useState({ role: "", company: "", description: "" });
   const [step, setStep] = useState("start");
@@ -81,6 +85,20 @@ export default function ResumeBuilderView({ onBackToDashboard, initialOptions })
   const [warnings, setWarnings] = useState([]);
   const [toast, setToast] = useState(null);
   const [savedIds, setSavedIds] = useState([]);
+
+  // Preview zoom: "fit" fits the A4 sheet to the preview viewport, or an explicit scale.
+  const [zoom, setZoom] = useState("fit");
+  const ZOOM_STEP = 0.15;
+  const MIN_ZOOM = 0.4;
+  const MAX_ZOOM = 2;
+  const isZoomNumber = typeof zoom === "number";
+  const changeZoom = (delta) => {
+    const base = isZoomNumber ? zoom : 1;
+    setZoom(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round((base + delta) * 100) / 100)));
+  };
+  const resetZoom = () => setZoom("fit");
+  const zoomCanOut = isZoomNumber && zoom <= MIN_ZOOM;
+  const zoomCanIn = isZoomNumber && zoom >= MAX_ZOOM;
 
   const showToast = (msg, type = "info") => {
     setToast({ msg, type });
@@ -330,29 +348,6 @@ export default function ResumeBuilderView({ onBackToDashboard, initialOptions })
         </div>
       )}
 
-      {/* Compact top bar */}
-      <header className="fg-rb__topbar">
-        <button className="fg-rb__back" onClick={onBackToDashboard}>
-          <ChevronLeft size={16} />
-          <span>Dashboard</span>
-        </button>
-        <div className="fg-rb__topbar-center">
-          <span className="fg-rb__topbar-title">Resume Builder</span>
-        </div>
-        <div className="fg-rb__topbar-actions">
-          {savedId && !isOnStart && (
-            <span className="fg-rb__saved-pill"><Check size={12} /> Saved</span>
-          )}
-          {!isOnStart && (
-            <button className="fg-btn fg-btn--ghost fg-btn--sm" onClick={handleSave}
-              disabled={!candidate.personal_info.fullName}>
-              <Save size={14} />
-              {savedId ? "Update" : "Save"}
-            </button>
-          )}
-        </div>
-      </header>
-
       <div className="fg-rb__body">
         {/* Left: Step rail */}
         {!isOnStart && (
@@ -452,11 +447,40 @@ export default function ResumeBuilderView({ onBackToDashboard, initialOptions })
         {!isOnStart && (
           <aside className="fg-rb__preview">
             <div className="fg-rb__preview-head">
-              <Eye size={14} />
-              <span>Live Preview</span>
+              <span className="fg-rb__preview-title">
+                <Eye size={14} />
+                Live Preview
+              </span>
+              <div className="fg-rb__preview-actions">
+                {savedId && (
+                  <span className="fg-rb__saved-pill"><Check size={12} /> Saved</span>
+                )}
+                <div className="fg-rb__zoom" role="group" aria-label="Preview zoom">
+                  <button type="button" className="fg-zoom-btn" onClick={() => changeZoom(-ZOOM_STEP)}
+                    disabled={zoomCanOut} aria-label="Zoom out" title="Zoom out">
+                    <ZoomOut size={14} />
+                  </button>
+                  <button type="button" className="fg-zoom-value" onClick={resetZoom}
+                    title="Reset to fit preview">
+                    {isZoomNumber ? `${Math.round(zoom * 100)}%` : "Fit"}
+                  </button>
+                  <button type="button" className="fg-zoom-btn" onClick={() => changeZoom(ZOOM_STEP)}
+                    disabled={zoomCanIn} aria-label="Zoom in" title="Zoom in">
+                    <ZoomIn size={14} />
+                  </button>
+                </div>
+                <button type="button" className="fg-btn fg-btn--primary fg-btn--sm"
+                  onClick={handleSave} disabled={!candidate.personal_info.fullName}>
+                  <Save size={14} />
+                  {savedId ? "Update" : "Save"}
+                </button>
+              </div>
             </div>
-            <div className="fg-rb__preview-paper">
-              <LivePreview candidate={candidate} job={job} templateId={templateId} generated={generated} />
+            <div className="fg-rb__preview-scroll">
+              <div className="fg-rb__preview-stage">
+                <LivePreview candidate={candidate} job={job} templateId={templateId}
+                  generated={generated} zoom={zoom} />
+              </div>
             </div>
           </aside>
         )}
@@ -1027,8 +1051,11 @@ function ReviewStep({ generated, warnings, versionName, setVersionName, template
 
 
 // ---------- Live Preview ----------
-function LivePreview({ candidate, job, templateId, generated }) {
-  const ref = useRef(null);
+function LivePreview({ candidate, job, templateId, generated, zoom }) {
+  const stageRef = useRef(null);
+  const sheetRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
   const view = useMemo(() => {
     if (generated?.header) return generated;
     return candidateToPreview(candidate, job, templateId);
@@ -1037,89 +1064,143 @@ function LivePreview({ candidate, job, templateId, generated }) {
   const hasContent = candidate.personal_info.fullName || candidate.personal_info.email
     || candidate.work_experience.length || candidate.education.length || candidate.skills.length;
 
+  useLayoutEffect(() => {
+    if (typeof zoom === "number") {
+      setScale(zoom);
+      return;
+    }
+    const compute = () => {
+      const stage = stageRef.current;
+      const sheet = sheetRef.current;
+      if (!stage || !sheet) return;
+      const rect = stage.getBoundingClientRect();
+      const contentH = sheet.scrollHeight || A4_H;
+      const availW = Math.max(140, rect.width - 32);
+      const availH = Math.max(200, rect.height - 32);
+      const s = Math.min(availW / A4_W, availH / Math.max(contentH, A4_H));
+      setScale(Math.min(1.25, Math.max(0.32, s)));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    if (stageRef.current) ro.observe(stageRef.current);
+    return () => ro.disconnect();
+  }, [zoom, view]);
+
+  const sheetH = sheetRef.current?.scrollHeight || A4_H;
+
   if (!hasContent && !generated) {
     return (
       <div className="fg-preview-empty">
-        <FileText size={32} />
-        <p>Your resume preview will appear here as you fill in the sections.</p>
+        <div className="fg-preview-empty__sheet">
+          <FileText size={30} />
+        </div>
+        <p className="fg-preview-empty__title">Your live preview will appear here</p>
+        <p className="fg-preview-empty__sub">
+          Fill in a section and the resume document renders instantly, like a real A4 page.
+        </p>
       </div>
     );
   }
 
   return (
-    <article ref={ref} className={`fg-resume fg-resume--${templateId}`}>
-      <header className="fg-resume__head">
-        <h1>{view?.header?.full_name || candidate.personal_info.fullName || "Your Name"}</h1>
-        {view?.header?.title && <div className="fg-resume__title">{view.header.title}</div>}
-        {(view?.header?.contacts || []).length > 0 && (
-          <div className="fg-resume__contacts">{(view.header.contacts || []).filter(Boolean).join(" \u00B7 ")}</div>
+    <div className="fg-rb__sheet-wrap" style={{ width: A4_W * scale, height: sheetH * scale }}>
+      <article
+        ref={sheetRef}
+        className={`fg-resume fg-resume--${templateId}`}
+        style={{ width: A4_W, transform: `scale(${scale})`, transformOrigin: "top left" }}
+      >
+        <header className="fg-resume__head">
+          <h1>{view?.header?.full_name || candidate.personal_info.fullName || "Untitled Resume"}</h1>
+          {view?.header?.title && <div className="fg-resume__title">{view.header.title}</div>}
+          {(view?.header?.contacts || []).length > 0 && (
+            <div className="fg-resume__contacts">
+              {(view.header.contacts || []).filter(Boolean).join("  \u00B7  ")}
+            </div>
+          )}
+        </header>
+
+        {(view?.summary?.summary_text || candidate.summary) && (
+          <section className="fg-resume__section">
+            <h2>Summary</h2>
+            <p>{view?.summary?.summary_text || candidate.summary}</p>
+          </section>
         )}
-      </header>
 
-      {(view?.summary?.summary_text || candidate.summary) && (
-        <section>
-          <h2>Summary</h2>
-          <p>{view?.summary?.summary_text || candidate.summary}</p>
-        </section>
-      )}
-
-      {(view?.skills?.groups || []).length > 0 && (
-        <section>
-          <h2>Skills</h2>
-          {view.skills.groups.map((g, i) => (
-            <p key={i}><strong>{g.group_name}:</strong> {(g.items || []).join(", ")}</p>
-          ))}
-        </section>
-      )}
-
-      {(view?.experience || []).length > 0 && (
-        <section>
-          <h2>Experience</h2>
-          {view.experience.map((exp, i) => (
-            <div key={i} className="fg-resume__entry">
-              <div className="fg-resume__entry-head">
-                <strong>{exp.role}</strong>
-                <span>{exp.company}</span>
+        {(view?.skills?.groups || []).length > 0 && (
+          <section className="fg-resume__section">
+            <h2>Skills</h2>
+            {view.skills.groups.map((g, i) => (
+              <div key={i} className="fg-resume__skill-line">
+                <strong>{g.group_name}:</strong>
+                <span>{(g.items || []).filter(Boolean).join("  \u00B7  ")}</span>
               </div>
-              <div className="fg-resume__entry-meta">{exp.start_date} \u2013 {exp.end_date}</div>
-              {(exp.highlights || []).length > 0 && (
-                <ul>{(exp.highlights || []).map((h, idx) => <li key={idx}>{h}</li>)}</ul>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
+            ))}
+          </section>
+        )}
 
-      {(view?.education || []).length > 0 && (
-        <section>
-          <h2>Education</h2>
-          {view.education.map((e, i) => (
-            <div key={i} className="fg-resume__entry">
-              <div className="fg-resume__entry-head">
-                <strong>{e.institution}</strong>
-                <span>{e.degree}{e.field ? `, ${e.field}` : ""}</span>
+        {(view?.experience || []).length > 0 && (
+          <section className="fg-resume__section">
+            <h2>Experience</h2>
+            {view.experience.map((exp, i) => (
+              <div key={i} className="fg-resume__entry">
+                <div className="fg-resume__row">
+                  <strong>{exp.role}</strong>
+                  {(exp.start_date || exp.end_date) && (
+                    <span className="fg-resume__dates">{exp.start_date} \u2013 {exp.end_date}</span>
+                  )}
+                </div>
+                {(exp.company || exp.location) && (
+                  <div className="fg-resume__org">
+                    {[exp.company, exp.location].filter(Boolean).join("  \u00B7  ")}
+                  </div>
+                )}
+                {(exp.highlights || []).length > 0 && (
+                  <ul className="fg-resume__bullets">
+                    {(exp.highlights || []).map((h, idx) => <li key={idx}>{h}</li>)}
+                  </ul>
+                )}
               </div>
-              {(e.start_date || e.end_date) && (
-                <div className="fg-resume__entry-meta">{e.start_date} \u2013 {e.end_date}</div>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
+            ))}
+          </section>
+        )}
 
-      {(view?.optional_sections || []).map((s, i) => (
-        <section key={i}>
-          <h2>{s.title}</h2>
-          <ul>{(s.items || []).map((it, j) => <li key={j}>{it}</li>)}</ul>
-        </section>
-      ))}
-    </article>
+        {(view?.education || []).length > 0 && (
+          <section className="fg-resume__section">
+            <h2>Education</h2>
+            {view.education.map((e, i) => (
+              <div key={i} className="fg-resume__entry">
+                <div className="fg-resume__row">
+                  <strong>{e.institution}</strong>
+                  {(e.start_date || e.end_date) && (
+                    <span className="fg-resume__dates">{e.start_date} \u2013 {e.end_date}</span>
+                  )}
+                </div>
+                {(e.degree || e.field) && (
+                  <div className="fg-resume__org">
+                    {[e.degree, e.field, e.gpa, e.location].filter(Boolean).join("  \u00B7  ")}
+                  </div>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {(view?.optional_sections || []).map((s, i) => (
+          <section key={i} className="fg-resume__section">
+            <h2>{s.title}</h2>
+            <ul className="fg-resume__bullets">
+              {(s.items || []).map((it, j) => <li key={j}>{it}</li>)}
+            </ul>
+          </section>
+        ))}
+      </article>
+    </div>
   );
 }
 
 function candidateToPreview(candidate, job, templateId) {
   const pi = candidate.personal_info;
-  const contacts = [pi.email, pi.phone, pi.location, pi.linkedin, pi.github].filter(Boolean);
+  const contacts = [pi.email, pi.phone, pi.location, pi.linkedin, pi.github, pi.portfolio].filter(Boolean);
   const skillsGroups = [];
   if (Array.isArray(candidate.skills) && candidate.skills.length) {
     skillsGroups.push({ group_name: "Skills", items: candidate.skills });
@@ -1135,7 +1216,7 @@ function candidateToPreview(candidate, job, templateId) {
     })),
     education: (candidate.education || []).map((e) => ({
       institution: e.school, degree: e.degree, field: e.field,
-      start_date: e.startDate, end_date: e.endDate,
+      start_date: e.startDate, end_date: e.endDate, gpa: e.gpa, location: e.location,
     })),
     optional_sections: (candidate.projects || []).length
       ? [{ title: "Projects", items: candidate.projects.map((p) => `${p.name} \u2014 ${p.techStack}: ${p.description}`) }]

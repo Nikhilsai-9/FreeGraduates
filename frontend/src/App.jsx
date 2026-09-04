@@ -60,7 +60,7 @@ function AuthenticatedWorkspace() {
         />
 
         {/* View Switcher Container */}
-        <main className="unified-view-content-area">
+        <main className={`unified-view-content-area ${activeView === "builder" ? "content-area-full-bleed" : ""}`}>
           {activeView === "dashboard" && (
             <DashboardView
               currentUser={currentUser}
