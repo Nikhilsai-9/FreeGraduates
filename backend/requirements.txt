@@ -4,7 +4,6 @@
 # --- Web framework (replaces Flask with FastAPI for async, OpenAPI, modern) ---
 fastapi>=0.110.0
 uvicorn[standard]>=0.27.0
-gunicorn>=22.0.0
 python-multipart>=0.0.9
 
 # --- Configuration ---

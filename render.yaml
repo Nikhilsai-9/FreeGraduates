@@ -1,14 +1,13 @@
 services:
   - type: web
     name: freegraduates-backend
-    runtime: python
+    runtime: docker
     rootDir: backend
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: Dockerfile
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.0
+        value: "3.12"
       - key: DEV_AUTH_BYPASS
         value: "true"
       - key: GEMINI_MODEL

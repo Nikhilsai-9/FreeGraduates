@@ -1,0 +1,17 @@
+.env
+.env.*
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.git
+.gitignore
+.vscode
+.idea
+Dockerfile
+.dockerignore
+package.json
+*.md
+LICENSE
+uploads/*
+!uploads/.gitkeep
