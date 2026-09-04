@@ -2808,3 +2808,46 @@ img.avatar-circle.avatar-img {
     padding: 16px;
   }
 }
+
+/* ==========================================================
+   ERROR BOUNDARY (recovery UI instead of a white screen)
+   ========================================================== */
+.fg-error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 360px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-ink-primary);
+}
+.fg-error-boundary__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+.fg-error-boundary h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+.fg-error-boundary p {
+  margin: 0;
+  max-width: 520px;
+  color: var(--color-ink-secondary);
+  font-size: 14px;
+}
+.fg-error-boundary__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}

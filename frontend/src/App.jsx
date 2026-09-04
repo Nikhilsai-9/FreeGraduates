@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import DashboardView from "./components/DashboardView";
@@ -78,7 +79,8 @@ function AuthenticatedWorkspace() {
 
         {/* View Switcher Container */}
         <main className={`unified-view-content-area ${activeView === "builder" ? "content-area-full-bleed" : ""}`}>
-          {activeView === "dashboard" && (
+          <ErrorBoundary>
+            {activeView === "dashboard" && (
             <DashboardView
               currentUser={currentUser}
               setActiveView={setActiveView}
@@ -135,6 +137,7 @@ function AuthenticatedWorkspace() {
               <History />
             </div>
           )}
+          </ErrorBoundary>
         </main>
       </div>
     </div>
@@ -144,7 +147,8 @@ function AuthenticatedWorkspace() {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <ErrorBoundary>
+        <Routes>
         {/* Public Landing Page & Auth */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -178,6 +182,7 @@ export default function App() {
           }
         />
       </Routes>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

@@ -1061,8 +1061,10 @@ function LivePreview({ candidate, job, templateId, generated, zoom }) {
     return candidateToPreview(candidate, job, templateId);
   }, [generated, candidate, job, templateId]);
 
-  const hasContent = candidate.personal_info.fullName || candidate.personal_info.email
-    || candidate.work_experience.length || candidate.education.length || candidate.skills.length;
+  const pi = (candidate.personal_info || {});
+  const hasContent = pi.fullName || pi.email
+    || (candidate.work_experience || []).length || (candidate.education || []).length
+    || (candidate.skills || []).length || (candidate.projects || []).length;
 
   useLayoutEffect(() => {
     if (typeof zoom === "number") {
@@ -1199,27 +1201,37 @@ function LivePreview({ candidate, job, templateId, generated, zoom }) {
 }
 
 function candidateToPreview(candidate, job, templateId) {
-  const pi = candidate.personal_info;
-  const contacts = [pi.email, pi.phone, pi.location, pi.linkedin, pi.github, pi.portfolio].filter(Boolean);
+  const safe = candidate && typeof candidate === "object" ? candidate : {};
+  const pi = safe.personal_info && typeof safe.personal_info === "object" ? safe.personal_info : {};
+  const contacts = [pi.email, pi.phone, pi.location, pi.linkedin, pi.github, pi.portfolio]
+    .filter((v) => v && String(v).trim()).map((v) => String(v).trim());
   const skillsGroups = [];
-  if (Array.isArray(candidate.skills) && candidate.skills.length) {
-    skillsGroups.push({ group_name: "Skills", items: candidate.skills });
+  if (Array.isArray(safe.skills) && safe.skills.length) {
+    skillsGroups.push({ group_name: "Skills", items: safe.skills.map((s) => String(s)).filter(Boolean) });
   }
   return {
-    header: { full_name: pi.fullName, title: pi.title || job?.role || "", contacts },
-    summary: { summary_text: candidate.summary || "" },
+    header: { full_name: pi.fullName || "", title: pi.title || job?.role || "", contacts },
+    summary: { summary_text: safe.summary || "" },
     skills: { groups: skillsGroups },
-    experience: (candidate.work_experience || []).map((e) => ({
-      role: e.role, company: e.company,
-      start_date: e.startDate, end_date: e.endDate,
-      highlights: (e.description || "").split(/\n+/).map((s) => s.trim()).filter(Boolean),
+    experience: (safe.work_experience || []).map((e) => ({
+      role: e && e.role ? String(e.role) : "",
+      company: e && e.company ? String(e.company) : "",
+      location: e && e.location ? String(e.location) : "",
+      start_date: e && e.startDate ? String(e.startDate) : "",
+      end_date: e && e.endDate ? String(e.endDate) : "",
+      highlights: String((e && e.description) || "").split(/\n+/).map((s) => s.trim()).filter(Boolean),
     })),
-    education: (candidate.education || []).map((e) => ({
-      institution: e.school, degree: e.degree, field: e.field,
-      start_date: e.startDate, end_date: e.endDate, gpa: e.gpa, location: e.location,
+    education: (safe.education || []).map((e) => ({
+      institution: e && e.school ? String(e.school) : "",
+      degree: e && e.degree ? String(e.degree) : "",
+      field: e && e.field ? String(e.field) : "",
+      start_date: e && e.startDate ? String(e.startDate) : "",
+      end_date: e && e.endDate ? String(e.endDate) : "",
+      gpa: e && e.gpa ? String(e.gpa) : "",
+      location: e && e.location ? String(e.location) : "",
     })),
-    optional_sections: (candidate.projects || []).length
-      ? [{ title: "Projects", items: candidate.projects.map((p) => `${p.name} \u2014 ${p.techStack}: ${p.description}`) }]
+    optional_sections: (safe.projects || []).length
+      ? [{ title: "Projects", items: safe.projects.map((p) => `${p && p.name ? p.name : ""} ${p && p.techStack ? "— " + p.techStack : ""}${p && p.description ? ": " + p.description : ""}`.trim()) }]
       : [],
   };
 }
@@ -1237,9 +1249,21 @@ function Field({ label, required, hint, children }) {
 }
 
 function mergeCandidate(base, payload) {
+  if (!payload || typeof payload !== "object") return base;
   const c = { ...base, ...payload };
-  if (payload.personal_info) c.personal_info = { ...base.personal_info, ...payload.personal_info };
-  if (!Array.isArray(c.skills) && payload.skills) c.skills = payload.skills;
-  if (!Array.isArray(c.skills)) c.skills = [];
+  c.personal_info = { ...(base.personal_info || {}), ...(payload.personal_info || {}) };
+  ["work_experience", "education", "projects", "certifications", "awards", "languages"].forEach((k) => {
+    if (!Array.isArray(c[k])) c[k] = [];
+  });
+  if (!Array.isArray(c.skills)) {
+    if (c.skills && typeof c.skills === "object" && Array.isArray(c.skills.technical)) {
+      c.skills = c.skills.technical;
+    } else if (typeof c.skills === "string") {
+      c.skills = c.skills.split(",").map((s) => s.trim()).filter(Boolean);
+    } else {
+      c.skills = [];
+    }
+  }
+  c.summary = typeof c.summary === "string" ? c.summary : c.summary ? String(c.summary) : "";
   return c;
 }
