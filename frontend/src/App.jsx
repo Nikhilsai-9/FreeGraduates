@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -24,15 +24,19 @@ function AuthenticatedWorkspace() {
     : location.pathname.startsWith("/dashboard")
       ? "dashboard"
       : null;
+  const lastRouteRef = useRef(routeView);
   const [activeView, setActiveView] = useState(routeView || "dashboard"); // 'dashboard' | 'builder' | 'analyzer' | 'ats-checker' | 'optimizer' | 'coach' | 'history'
   const [collapsed, setCollapsed] = useState(false);
 
-  // Keep the view in sync when the URL changes (deep links, back/forward).
+  // Sync the view only when the URL itself changes (deep links, back/forward,
+  // Link navigation). Sidebar/header clicks change state directly and must NOT
+  // be overridden by the URL-derived value, otherwise every click snaps back.
   useEffect(() => {
-    if (routeView && routeView !== activeView) {
+    if (routeView !== lastRouteRef.current) {
+      lastRouteRef.current = routeView;
       setActiveView(routeView);
     }
-  }, [routeView, activeView]);
+  }, [routeView]);
   const [builderOptions, setBuilderOptions] = useState({
     resumeId: null,
     creationPath: "form",
