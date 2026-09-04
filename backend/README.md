@@ -60,6 +60,7 @@ frontend expects it on this port — see `frontend/.env.example`.
 | `FIREBASE_PROJECT_ID` | no | Firebase project id |
 | `DEV_AUTH_BYPASS` | no (default `false`) | Skip Firebase verification (local dev) |
 | `CLIENT_ORIGINS` | no | CORS allow-list (comma-separated) |
+| `CLIENT_ORIGINS_REGEX` | no (`https://.*\.vercel\.app`) | Scoped regex of extra CORS origins (Vercel) |
 | `DATA_DIR` | no (default `./app/data`) | Where users' resumes live |
 | `MAX_UPLOAD_BYTES` | no (default 16 MB) | Max upload size |
 | `POPPLER_PATH` | Windows only | Path to Poppler's `bin/` |

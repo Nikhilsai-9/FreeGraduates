@@ -54,3 +54,42 @@ def test_dev_bypass_route_returns_200_not_500():
 
         _bootstrap_firebase.cache_clear()
         get_settings.cache_clear()
+
+
+def test_cors_preflight_allows_production_vercel_origin():
+    """OPTIONS preflight from a Vercel frontend must return 200, not 400.
+
+    Regression: the production frontend origin was missing from
+    ``allow_origins``, so every cross-origin preflight was rejected with
+    400 (visible in Render logs as ``OPTIONS /api/health ... 400``) and
+    browsers blocked the real requests.
+    """
+    from app.config import get_settings
+    get_settings.cache_clear()
+
+    from main import create_app
+    client = TestClient(create_app())
+
+    r = client.options(
+        "/api/resume/extract",
+        headers={
+            "Origin": "https://freegraduates.vercel.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.headers.get("access-control-allow-origin") == "https://freegraduates.vercel.app"
+    assert "POST" in r.headers.get("access-control-allow-methods", "")
+
+    # A clearly hostile origin must still be rejected.
+    r = client.options(
+        "/api/resume/extract",
+        headers={
+            "Origin": "https://evil.example.com",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert r.status_code != 200
+
+    get_settings.cache_clear()

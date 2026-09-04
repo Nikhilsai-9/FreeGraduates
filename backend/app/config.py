@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     client_origins: str = Field(
         default="http://localhost:5173,http://127.0.0.1:5173"
     )
+    # Scoped regex of origins allowed in addition to `client_origins`.
+    # Covers Vercel deployments (my-app.vercel.app / *.vercel.app) so the
+    # production frontend's OPTIONS preflight is accepted. Never a bare `.*`.
+    client_origins_regex: str = Field(default=r"https://.*\.vercel\.app")
     dev_auth_bypass: bool = Field(default=False)
 
     # ---------- AI Provider (Google Gemini) ----------
