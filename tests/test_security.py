@@ -56,6 +56,37 @@ def test_dev_bypass_route_returns_200_not_500():
         get_settings.cache_clear()
 
 
+def test_extract_returns_401_when_firebase_unconfigured_and_no_bypass():
+    """Without a service account AND without DEV_AUTH_BYPASS, auth must 401.
+
+    This is the exact live-Render failure the user saw: the server runs,
+    requests reach FastAPI (CORS fixed), but the manual service never got
+    DEV_AUTH_BYPASS so every authenticated route returns 401
+    "Authorization token missing. Please sign in."
+    """
+    with patch.dict(os.environ, {}, clear=False):
+        if "DEV_AUTH_BYPASS" in os.environ:
+            del os.environ["DEV_AUTH_BYPASS"]
+        from app.config import get_settings
+        get_settings.cache_clear()
+        from app.security import _bootstrap_firebase
+        _bootstrap_firebase.cache_clear()
+
+        from main import create_app
+        client = TestClient(create_app())
+
+        r = client.post(
+            "/api/resume/extract",
+            files={"file": ("resume.pdf", b"%PDF-1.4 junk", "application/pdf")},
+            headers={"x-user-uid": "test-uid"},
+        )
+        assert r.status_code == 401, r.text
+        assert "Authorization token missing" in r.json().get("detail", "")
+
+        get_settings.cache_clear()
+        _bootstrap_firebase.cache_clear()
+
+
 def test_cors_preflight_allows_production_vercel_origin():
     """OPTIONS preflight from a Vercel frontend must return 200, not 400.
 

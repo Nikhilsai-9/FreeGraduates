@@ -38,11 +38,18 @@ def _bootstrap_firebase() -> bool:
 
     settings = get_settings()
     if not settings.is_firebase_configured:
-        logger.warning(
-            "Firebase service account not found at %s. "
-            "Auth verification will run in DEV-BYPASS mode.",
-            settings.firebase_service_account_path,
-        )
+        if settings.dev_auth_bypass:
+            logger.warning(
+                "Firebase service account not found at %s. "
+                "DEV_AUTH_BYPASS is on — requesting auth verification is skipped.",
+                settings.firebase_service_account_path,
+            )
+        else:
+            logger.warning(
+                "Firebase service account not found at %s and DEV_AUTH_BYPASS is off — "
+                "all authenticated endpoints will return 401 until configured.",
+                settings.firebase_service_account_path,
+            )
         return False
 
     try:
