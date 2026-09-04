@@ -23,6 +23,12 @@ desktop.ini
 backend/uploads/*
 !backend/uploads/.gitkeep
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
 # Logs
 *.log
 npm-debug.log*
