@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sparkles,
@@ -14,7 +14,20 @@ import {
   RotateCcw
 } from "lucide-react";
 import html2pdf from "html2pdf.js";
-import { generateResumeDiffAnalysis } from "../services/aiEngine";
+import { resumeApi } from "../api/api";
+import Toast from "./Toast";
+
+/** Translate the editor-shaped candidate into the backend API shape. */
+function toBackendCandidate(r) {
+  return {
+    personal_info: r.personal ? { ...r.personal } : {},
+    summary: r.personal?.summary || r.summary || "",
+    work_experience: Array.isArray(r.experience) ? r.experience : [],
+    education: Array.isArray(r.education) ? r.education : [],
+    skills: Array.isArray(r.skills) ? r.skills : [],
+    projects: Array.isArray(r.projects) ? r.projects : [],
+  };
+}
 
 export default function ResumeAnalyzerView() {
   const navigate = useNavigate();
@@ -63,21 +76,86 @@ export default function ResumeAnalyzerView() {
     skills: ["TypeScript", "JavaScript", "Python", "React.js", "Node.js", "Go", "PostgreSQL", "Docker", "AWS", "Git"]
   });
 
-  // Diff Analysis Data
-  const [analysisResult, setAnalysisResult] = useState(() =>
-    generateResumeDiffAnalysis(resumeData, jobDescription)
-  );
+  // Diff Analysis Data — empty placeholder; we call the backend on mount
+  // (after best-effort prefill from saved resumes) and on every refresh.
+  const [analysisResult, setAnalysisResult] = useState({
+    score: 0,
+    verdict: "pending",
+    matchedKeywords: [],
+    missingKeywords: [],
+    matchedCount: 0,
+    missingCount: 0,
+    breakdown: {},
+    diffs: [],
+  });
+  const [loadedFromBackend, setLoadedFromBackend] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
-  // Run analysis when triggered
-  const handleRunAnalysis = () => {
-    setAnalyzing(true);
-    setTimeout(() => {
-      const result = generateResumeDiffAnalysis(resumeData, jobDescription);
-      setAnalysisResult(result);
-      setAnalyzing(false);
+  // Best-effort prefill: load most-recent saved resume and mirror its
+  // job description into the analyzer. Failure is non-fatal — the seed
+  // candidate stays usable.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await resumeApi.list();
+        if (cancelled || !Array.isArray(list) || list.length === 0) return;
+        const latest = list[0];
+        const rec = await resumeApi.get(latest.id);
+        if (cancelled || !rec || !rec.candidate) return;
+        const c = rec.candidate;
+        const pi = c.personal_info || {};
+        setResumeData({
+          personal: { ...pi, summary: c.summary || pi.summary || "" },
+          experience: Array.isArray(c.work_experience) ? c.work_experience : [],
+          education: Array.isArray(c.education) ? c.education : [],
+          skills: Array.isArray(c.skills) ? c.skills : [],
+          projects: Array.isArray(c.projects) ? c.projects : [],
+        });
+        if (rec.job?.role || rec.job?.company) {
+          const parts = [];
+          if (rec.job.role) parts.push(`Role: ${rec.job.role}`);
+          if (rec.job.company) parts.push(`Company: ${rec.job.company}`);
+          if (rec.job.description) parts.push(rec.job.description);
+          setJobDescription(parts.join("\n\n"));
+        }
+        setLoadedFromBackend(true);
+      } catch (err) {
+        console.warn("Could not prefill analyzer from saved resumes:", err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Run a fresh analysis against the backend.
+  const runAnalysis = async () => {
+    try {
+      setAnalyzing(true);
+      const result = await resumeApi.analyze({
+        candidate: toBackendCandidate(resumeData),
+        job: { role: "", company: "", description: jobDescription },
+      });
+      setAnalysisResult(
+        result || { score: 0, verdict: "pending", matchedKeywords: [], missingKeywords: [], breakdown: {}, diffs: [] }
+      );
       setStep("diff");
-    }, 400);
+    } catch (err) {
+      console.error("Analyzer error:", err);
+      setToastMessage(
+        err.response?.data?.detail || err.message || "Analyzer service is unavailable. Please try again."
+      );
+    } finally {
+      setAnalyzing(false);
+    }
   };
+
+  // Run once after we have a prefill (or straight away with the seed).
+  useEffect(() => {
+    runAnalysis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedFromBackend]);
+
+  const handleRunAnalysis = () => runAnalysis();
 
   // Toggle individual diff acceptance
   const setDiffStatus = (diffId, status) => {
@@ -132,6 +210,7 @@ export default function ResumeAnalyzerView() {
 
   return (
     <div className="analyzer-view-container">
+      <Toast message={toastMessage} type="error" onClose={() => setToastMessage("")} />
       {/* Top Header Controls */}
       <div className="analyzer-top-bar">
         <div className="analyzer-bar-left">

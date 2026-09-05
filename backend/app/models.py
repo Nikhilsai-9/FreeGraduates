@@ -160,6 +160,54 @@ class HealthResponse(BaseModel):
     data_dir: str
 
 
+# -------------------- Analyzer --------------------
+
+
+class AnalyzeRequest(BaseModel):
+    """Body for POST /api/resume/analyze.
+
+    `candidate` is the same shape the builder saves; `job` is optional but
+    the score collapses to a generic completeness review without it.
+    """
+
+    candidate: dict = Field(..., description="Candidate data (frontend shape).")
+    job: Optional[JobDescriptionInput] = None
+
+
+class AnalyzeSuggestion(BaseModel):
+    """A single actionable change the user can apply to their resume."""
+
+    id: str
+    section: str
+    targetId: Optional[str] = None
+    type: str = Field(..., description="One of: addition, verb_enhancement, deletion")
+    title: str
+    explanation: str
+    originalText: Optional[str] = None
+    recommendedText: Optional[str] = None
+    addedSkills: Optional[list[str]] = None
+    status: str = "pending"
+
+
+class AnalyzeScoreBreakdown(BaseModel):
+    keywordMatch: float
+    actionVerbs: float
+    metrics: float
+    completeness: float
+    summary: float
+
+
+class AnalyzeResponse(BaseModel):
+    score: float = Field(..., ge=0, le=100)
+    verdict: str
+    matchedKeywords: list[str] = Field(default_factory=list)
+    missingKeywords: list[str] = Field(default_factory=list)
+    matchedCount: int = 0
+    missingCount: int = 0
+    breakdown: AnalyzeScoreBreakdown
+    diffs: list[AnalyzeSuggestion] = Field(default_factory=list)
+
+
 # -------------------- Auth context --------------------
 
 

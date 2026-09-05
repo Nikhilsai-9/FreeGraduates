@@ -130,6 +130,16 @@ export const resumeApi = {
     return response.data;
   },
 
+  /**
+   * Score a candidate's resume against a target JD and return a list of
+   * actionable diffs. Backed by `POST /api/resume/analyze` — deterministic,
+   * no LLM in the loop, so the score is reproducible.
+   */
+  analyze: async ({ candidate, job }) => {
+    const response = await api.post("/api/resume/analyze", { candidate, job });
+    return response.data;
+  },
+
   save: async (payload) => {
     const response = await api.post("/api/resume/save", payload);
     return response.data;

@@ -26,6 +26,8 @@ from app.engine.graph import generate_resume
 from app.engine.llm import get_llm
 from app.engine.schemas import JobTarget, ResumeStructured
 from app.models import (
+    AnalyzeRequest,
+    AnalyzeResponse,
     AuthUser,
     ExtractPdfResponse,
     GenerateResumeRequest,
@@ -35,6 +37,7 @@ from app.models import (
     SaveResumeRequest,
 )
 from app.security import get_current_user
+from app.services.analyzer import analyze_resume
 from app.services.docx_generator import render_resume_to_docx
 from app.services.markdown_generator import render_resume_to_markdown
 from app.services.pdf_extractor import extract_candidate_from_pdf
@@ -191,6 +194,22 @@ async def generate(payload: GenerateResumeRequest, user: AuthUser = Depends(get_
             "jd_keywords": result["jd_keywords"],
         },
     }
+
+
+# ---------- Routes: analyze ----------
+
+
+@router.post("/analyze", response_model=AnalyzeResponse)
+async def analyze(payload: AnalyzeRequest, user: AuthUser = Depends(get_current_user)):
+    """Score a candidate's resume against an optional job description.
+
+    The scoring engine is deterministic and rule-based (see
+    `app/services/analyzer.py`). It does NOT call the LLM — the same
+    input always yields the same score, which is what makes the diff
+    UI trustworthy to users.
+    """
+    job_dict = payload.job.model_dump() if payload.job else None
+    return analyze_resume(payload.candidate, job_dict)
 
 
 # ---------- Routes: CRUD ----------
