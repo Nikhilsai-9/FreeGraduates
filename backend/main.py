@@ -19,6 +19,7 @@ from app.api.routes_profile import router as profile_router
 from app.api.routes_resume import router as resume_router
 from app.api.routes_optimizer import router as optimizer_router
 from app.api.routes_coach import router as coach_router
+from app.api.routes_cover_letter import router as cover_letter_router
 from app.config import get_settings
 
 
@@ -53,7 +54,14 @@ def create_app() -> FastAPI:
     )
 
     # ---------- Routes ----------
-    for r in (health_router, profile_router, resume_router, optimizer_router, coach_router):
+    for r in (
+        health_router,
+        profile_router,
+        resume_router,
+        optimizer_router,
+        coach_router,
+        cover_letter_router,
+    ):
         app.include_router(r)
 
     # ---------- Global error handler ----------

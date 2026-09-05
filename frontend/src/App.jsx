@@ -10,6 +10,7 @@ import ResumeAnalyzerView from "./components/ResumeAnalyzerView";
 import AtsScannerView from "./components/AtsScannerView";
 import OptimizerView from "./components/OptimizerView";
 import CoachView from "./components/CoachView";
+import CoverLetterView from "./components/CoverLetterView";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -28,6 +29,7 @@ function viewFromPathname(pathname) {
   if (pathname.startsWith("/ats-scanner")) return "ats-checker";
   if (pathname.startsWith("/optimizer")) return "optimizer";
   if (pathname.startsWith("/coach")) return "coach";
+  if (pathname.startsWith("/cover-letter")) return "cover-letter";
   if (pathname.startsWith("/history")) return "history";
   return "dashboard";
 }
@@ -85,6 +87,8 @@ function AuthenticatedWorkspace() {
             {activeView === "optimizer" && <OptimizerView />}
 
             {activeView === "coach" && <CoachView />}
+
+            {activeView === "cover-letter" && <CoverLetterView />}
 
             {activeView === "history" && (
               <div className="history-embedded-container">
@@ -172,6 +176,14 @@ export default function App() {
         />
         <Route
           path="/coach"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cover-letter"
           element={
             <ProtectedRoute>
               <AuthenticatedWorkspace />

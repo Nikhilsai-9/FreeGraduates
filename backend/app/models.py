@@ -288,6 +288,49 @@ class CoachSession(BaseModel):
     createdAt: Optional[str] = None
     updatedAt: Optional[str] = None
 
+
+# -------------------- Cover Letter --------------------
+
+
+class CoverLetterCreate(BaseModel):
+    """Body for POST /api/cover-letter."""
+
+    resumeId: str = Field(..., description="Saved resume to source the candidate data from.")
+    jobDescription: str = Field(..., min_length=10)
+    targetRole: Optional[str] = None
+    targetCompany: Optional[str] = None
+    tone: str = Field(default="professional", description="professional | enthusiastic | concise")
+    length: str = Field(default="medium", description="short | medium | long")
+
+
+class CoverLetterUpdate(BaseModel):
+    """Body for PUT /api/cover-letter/{id}."""
+
+    subject: Optional[str] = None
+    body: Optional[str] = None
+    tone: Optional[str] = None
+    length: Optional[str] = None
+    status: Optional[str] = Field(default=None, description="draft | final")
+
+
+class CoverLetter(BaseModel):
+    id: str
+    uid: str
+    sourceFilename: Optional[str] = None
+    sourceResume: dict = Field(default_factory=dict)
+    jobDescription: str = ""
+    targetRole: Optional[str] = None
+    targetCompany: Optional[str] = None
+    tone: str = "professional"
+    length: str = "medium"
+    subject: str = ""
+    body: str = ""
+    recipientHint: str = "Hiring Team"
+    generatedBy: str = Field(default="rules", description="rules | gemini")
+    status: str = Field(default="draft", description="draft | final")
+    createdAt: Optional[str] = None
+    updatedAt: Optional[str] = None
+
 # -------------------- Auth context --------------------
 
 

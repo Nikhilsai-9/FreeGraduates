@@ -11,7 +11,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  LifeBuoy
+  LifeBuoy,
+  Mail
 } from "lucide-react";
 import Logo from "./Logo";
 
@@ -32,6 +33,7 @@ const NAV_GROUPS = [
     label: "Career Tools",
     items: [
       { id: "optimizer", path: "/optimizer", label: "Resume Optimizer", icon: Wand2 },
+      { id: "cover-letter", path: "/cover-letter", label: "Cover Letters", icon: Mail },
       { id: "coach", path: "/coach", label: "AI Coach & Tools", icon: Bot, badge: "Beta" },
       { id: "history", path: "/history", label: "Audit History", icon: History }
     ]

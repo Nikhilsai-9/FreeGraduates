@@ -290,3 +290,47 @@ export const coachApi = {
     return response.data;
   },
 };
+
+export const coverLetterApi = {
+  list: async () => {
+    const response = await api.get("/api/cover-letter");
+    return response.data;
+  },
+  create: async ({
+    resumeId,
+    jobDescription,
+    targetRole,
+    targetCompany,
+    tone,
+    length,
+  }) => {
+    const response = await api.post("/api/cover-letter", {
+      resumeId,
+      jobDescription,
+      targetRole,
+      targetCompany,
+      tone,
+      length,
+    });
+    return response.data;
+  },
+  get: async (id) => {
+    const response = await api.get(`/api/cover-letter/${id}`);
+    return response.data;
+  },
+  update: async (id, changes) => {
+    const response = await api.put(`/api/cover-letter/${id}`, changes);
+    return response.data;
+  },
+  regenerate: async (id, overrides = {}) => {
+    const response = await api.post(
+      `/api/cover-letter/${id}/regenerate`,
+      overrides
+    );
+    return response.data;
+  },
+  remove: async (id) => {
+    const response = await api.delete(`/api/cover-letter/${id}`);
+    return response.data;
+  },
+};
