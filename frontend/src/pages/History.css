@@ -139,7 +139,9 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--text);
-  max-width: 260px;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

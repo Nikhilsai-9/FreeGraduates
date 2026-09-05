@@ -22,12 +22,40 @@ export const api = axios.create({
   timeout: 90000,
 });
 
+// React context lives outside axios, but the interceptor runs per-request.
+// AuthContext pushes the current user here so API calls match whichever
+// auth method the app actually used (Firebase, QA bypass, future OAuth, …).
+// `null` means "no override — fall back to firebase.auth.currentUser".
+let apiUserOverride = null;
+
+export function setApiUserOverride(user) {
+  apiUserOverride = user || null;
+}
+
 api.interceptors.request.use(async (config) => {
   try {
-    const user = auth.currentUser;
+    // 1) Highest priority: explicit override from React auth context.
+    let user = apiUserOverride;
+    let token = null;
     if (user) {
-      const token = await user.getIdToken();
-      config.headers.Authorization = `Bearer ${token}`;
+      try {
+        token = (await user.getIdToken?.()) || null;
+      } catch {
+        token = null;
+      }
+    } else {
+      // 2) Fall back to the live Firebase auth instance.
+      user = auth.currentUser;
+      if (user) {
+        try {
+          token = await user.getIdToken();
+        } catch {
+          token = null;
+        }
+      }
+    }
+    if (user) {
+      config.headers.Authorization = `Bearer ${token || "dev-token"}`;
       config.headers["x-user-uid"] = user.uid;
       config.headers["x-user-email"] = user.email || "";
     } else {
@@ -174,10 +202,12 @@ export const resumeApi = {
     `${baseURL}/api/resume/${id}/export?format=${format}`,
 
   export: async (id, format) => {
-    const user = auth.currentUser;
+    const user = apiUserOverride || auth.currentUser;
     const headers = {};
     if (user) {
-      headers.Authorization = `Bearer ${await user.getIdToken()}`;
+      let token = null;
+      try { token = await user.getIdToken?.(); } catch { token = null; }
+      headers.Authorization = `Bearer ${token || "dev-token"}`;
       headers["x-user-uid"] = user.uid;
       headers["x-user-email"] = user.email || "";
     } else {

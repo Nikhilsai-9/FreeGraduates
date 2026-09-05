@@ -119,8 +119,19 @@ export default function ResumeBuilderView({ initialOptions }) {
         if (rec.generated) setGenerated(rec.generated);
         setStep("review");
       }).catch((err) => showToast("Could not load saved resume: " + err.message, "error"));
+      return;
     }
-  }, [initialOptions?.resumeId]);
+    // No saved resume requested — honour the ?path= URL param by skipping
+    // the start screen for the supported direct-entry pathways.
+    const path = (initialOptions?.creationPath || "").toLowerCase();
+    if (path === "form" || path === "scratch") {
+      setCreationPath(path === "form" ? "form" : "scratch");
+      setStep("personal");
+    } else if (path === "template") {
+      setCreationPath("template");
+      setStep("personal");
+    }
+  }, [initialOptions?.resumeId, initialOptions?.creationPath]);
 
   // ---------- Mutations ----------
   const setPersonal = (k, v) =>

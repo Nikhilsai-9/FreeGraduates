@@ -883,16 +883,19 @@
   .fg-rb__body { flex-direction: column; overflow-y: auto; }
   .fg-rb__rail {
     width: 100%;
+    max-width: 100%;
     border-right: 0;
     border-bottom: 1px solid var(--color-card-border);
     padding: 8px 12px;
     overflow-x: auto;
+    box-sizing: border-box;
   }
   .fg-rb__rail-inner {
     flex-direction: row;
     gap: 4px;
     overflow-x: auto;
     padding-bottom: 4px;
+    min-width: max-content;
   }
   .fg-rb__step { padding: 6px 10px; white-space: nowrap; font-size: 12px; }
   .fg-rb__step-label { font-size: 12px; }
