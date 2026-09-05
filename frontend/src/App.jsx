@@ -9,6 +9,7 @@ import ResumeBuilderView from "./components/ResumeBuilderView";
 import ResumeAnalyzerView from "./components/ResumeAnalyzerView";
 import AtsScannerView from "./components/AtsScannerView";
 import OptimizerView from "./components/OptimizerView";
+import CoachView from "./components/CoachView";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -83,20 +84,7 @@ function AuthenticatedWorkspace() {
             )}
             {activeView === "optimizer" && <OptimizerView />}
 
-            {activeView === "coach" && (
-              <div className="coach-placeholder-panel">
-                <div className="coach-inner-box">
-                  <div className="badge-pill">AI CAREER COACH & TOOLS</div>
-                  <h2>Interactive STAR Interview Simulator & Behavioral Guidance</h2>
-                  <p>
-                    Practice engineering behavioral questions, salary negotiation, and system design prompts with real-time feedback.
-                  </p>
-                  <p className="coach-placeholder-note">
-                    AI Coach will be available in a later release.
-                  </p>
-                </div>
-              </div>
-            )}
+            {activeView === "coach" && <CoachView />}
 
             {activeView === "history" && (
               <div className="history-embedded-container">

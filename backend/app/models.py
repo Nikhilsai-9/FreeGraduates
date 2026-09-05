@@ -1,8 +1,8 @@
 """Pydantic models for the API request/response surface.
 
 These are intentionally separate from `engine.schemas`:
-* `engine.schemas`  → the AI engine's internal contract (snake_case, OpenAI schema).
-* `models.py`        → the HTTP API surface (camelCase, friendly to React).
+* `engine.schemas`  â†’ the AI engine's internal contract (snake_case, OpenAI schema).
+* `models.py`        â†’ the HTTP API surface (camelCase, friendly to React).
 """
 
 from __future__ import annotations
@@ -236,11 +236,63 @@ class AtsCheckResponse(BaseModel):
     checks: list[AtsCheckItem]
 
 
+# -------------------- Interview Coach --------------------
+
+
+class CoachQuestion(BaseModel):
+    """A single interview question surfaced in the Coach UI."""
+
+    id: str
+    type: str = Field(..., description="behavioral | technical | resume | role")
+    prompt: str
+    category: str = ""
+    difficulty: str = Field(default="medium", description="easy | medium | hard")
+    modelAnswer: str = ""
+    tip: str = ""
+
+
+class CoachAnswer(BaseModel):
+    questionId: str
+    answer: str = ""
+    updatedAt: Optional[str] = None
+
+
+class CoachSessionCreate(BaseModel):
+    """Body for POST /api/coach."""
+
+    resumeId: Optional[str] = None
+    jobDescription: str = Field(..., min_length=10)
+    targetRole: Optional[str] = None
+    targetCompany: Optional[str] = None
+    questionCount: int = Field(default=8, ge=3, le=15)
+
+
+class CoachAnswerUpdate(BaseModel):
+    """Body for PUT /api/coach/{id}/answer."""
+
+    questionId: str
+    answer: str = ""
+
+
+class CoachSession(BaseModel):
+    id: str
+    uid: str
+    resumeId: Optional[str] = None
+    jobDescription: str = ""
+    targetRole: Optional[str] = None
+    targetCompany: Optional[str] = None
+    status: str = Field(default="ready", description="ready | in_progress | completed")
+    questions: list[CoachQuestion] = Field(default_factory=list)
+    answers: list[CoachAnswer] = Field(default_factory=list)
+    generatedBy: str = Field(default="rules", description="rules | gemini")
+    createdAt: Optional[str] = None
+    updatedAt: Optional[str] = None
+
 # -------------------- Auth context --------------------
 
 
 class AuthUser(BaseModel):
-    """Authenticated user, derived from the Firebase ID token — never
+    """Authenticated user, derived from the Firebase ID token â€” never
     trusted from request body or query parameters."""
 
     uid: str

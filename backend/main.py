@@ -1,4 +1,4 @@
-"""FreeGraduates AI Resume Builder — backend entry point.
+"""FreeGraduates AI Resume Builder â€” backend entry point.
 
 Run with:
     uvicorn main:app --reload --port 8000
@@ -18,6 +18,7 @@ from app.api.routes_health import router as health_router
 from app.api.routes_profile import router as profile_router
 from app.api.routes_resume import router as resume_router
 from app.api.routes_optimizer import router as optimizer_router
+from app.api.routes_coach import router as coach_router
 from app.config import get_settings
 
 
@@ -52,7 +53,7 @@ def create_app() -> FastAPI:
     )
 
     # ---------- Routes ----------
-    for r in (health_router, profile_router, resume_router, optimizer_router):
+    for r in (health_router, profile_router, resume_router, optimizer_router, coach_router):
         app.include_router(r)
 
     # ---------- Global error handler ----------
@@ -92,3 +93,4 @@ if __name__ == "__main__":  # pragma: no cover
         port=settings.port,
         reload=True,
     )
+

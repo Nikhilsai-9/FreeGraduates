@@ -248,3 +248,45 @@ export const optimizerApi = {
     return response.data;
   },
 };
+
+export const coachApi = {
+  list: async () => {
+    const response = await api.get("/api/coach");
+    return response.data;
+  },
+  create: async ({
+    resumeId,
+    jobDescription,
+    targetRole,
+    targetCompany,
+    questionCount,
+  }) => {
+    const response = await api.post("/api/coach", {
+      resumeId,
+      jobDescription,
+      targetRole,
+      targetCompany,
+      questionCount,
+    });
+    return response.data;
+  },
+  get: async (id) => {
+    const response = await api.get(`/api/coach/${id}`);
+    return response.data;
+  },
+  regenerate: async (id) => {
+    const response = await api.post(`/api/coach/${id}/regenerate`, {});
+    return response.data;
+  },
+  saveAnswer: async (id, questionId, answer) => {
+    const response = await api.put(`/api/coach/${id}/answer`, {
+      questionId,
+      answer,
+    });
+    return response.data;
+  },
+  remove: async (id) => {
+    const response = await api.delete(`/api/coach/${id}`);
+    return response.data;
+  },
+};
