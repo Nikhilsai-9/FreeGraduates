@@ -33,7 +33,7 @@ export default function Signup() {
       setLoading(true);
       setErrorMessage("");
       await signup(email, password, displayName);
-      navigate("/dashboard");
+      navigate("/onboarding", { replace: true });
     } catch (err) {
       console.error("Signup error:", err);
       let msg = err.message || "Failed to create account.";
@@ -51,7 +51,7 @@ export default function Signup() {
       setLoading(true);
       setErrorMessage("");
       await loginWithGoogle();
-      navigate("/dashboard");
+      navigate("/onboarding", { replace: true });
     } catch (err) {
       console.error("Google signup error:", err);
       setErrorMessage(err.message || "Google Sign-Up failed.");

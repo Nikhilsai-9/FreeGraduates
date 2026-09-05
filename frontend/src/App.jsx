@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import History from "./pages/History";
 import Results from "./pages/Results";
+import Onboarding from "./pages/Onboarding";
 import "./App.css";
 import "./components/ResumeBuilder.css";
 
@@ -115,6 +116,17 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/results/:id" element={<Results />} />
         <Route path="/history" element={<History />} />
+
+        {/* Onboarding wizard — full-screen, no sidebar. New users hit this
+            immediately after signup until their profile is complete. */}
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <Onboarding />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected Unified Workspace — URL is the source of truth for the active view. */}
         <Route

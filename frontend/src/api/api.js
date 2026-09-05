@@ -181,3 +181,18 @@ export const resumeApi = {
     URL.revokeObjectURL(url);
   },
 };
+
+export const profileApi = {
+  get: async () => {
+    const response = await api.get("/api/profile");
+    return response.data;
+  },
+  save: async (partial) => {
+    const response = await api.put("/api/profile", partial);
+    return response.data;
+  },
+  markOnboarded: async () => {
+    const response = await api.post("/api/profile/onboard");
+    return response.data;
+  },
+};

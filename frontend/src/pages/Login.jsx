@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { profileApi } from "../api/api";
 import Toast from "../components/Toast";
 import Logo from "../components/Logo";
 import "./Login.css";
@@ -18,6 +19,21 @@ export default function Login() {
 
   const from = location.state?.from?.pathname || "/dashboard";
 
+  // After login, send new users through onboarding if their profile is missing.
+  const routeAfterAuth = async () => {
+    try {
+      const profile = await profileApi.get();
+      if (profile && profile.onboardingComplete === false) {
+        navigate("/onboarding", { replace: true });
+        return;
+      }
+    } catch (err) {
+      // Profile fetch is best-effort — never block login on it.
+      console.warn("Profile check after login failed:", err);
+    }
+    navigate(from, { replace: true });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -29,7 +45,7 @@ export default function Login() {
       setLoading(true);
       setErrorMessage("");
       await login(email, password);
-      navigate(from, { replace: true });
+      await routeAfterAuth();
     } catch (err) {
       console.error("Login error:", err);
       let msg = "Failed to sign in. Please check your credentials.";
@@ -47,7 +63,7 @@ export default function Login() {
       setLoading(true);
       setErrorMessage("");
       await loginWithGoogle();
-      navigate(from, { replace: true });
+      await routeAfterAuth();
     } catch (err) {
       console.error("Google auth error:", err);
       setErrorMessage(err.message || "Google Sign-In failed.");
