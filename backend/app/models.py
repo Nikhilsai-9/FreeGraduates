@@ -208,6 +208,34 @@ class AnalyzeResponse(BaseModel):
     diffs: list[AnalyzeSuggestion] = Field(default_factory=list)
 
 
+# -------------------- ATS Scanner --------------------
+
+
+class AtsCheckRequest(BaseModel):
+    """Body for POST /api/resume/ats-check."""
+
+    candidate: dict = Field(..., description="Candidate data (frontend shape).")
+
+
+class AtsCheckItem(BaseModel):
+    id: str
+    label: str
+    status: str = Field(..., description="One of: pass, warn, fail")
+    weight: int
+    detail: str = ""
+    fix: str = ""
+
+
+class AtsCheckResponse(BaseModel):
+    score: float = Field(..., ge=0, le=100)
+    verdict: str = Field(..., description="ats-ready | minor-fixes | needs-work")
+    passed: int
+    warned: int
+    failed: int
+    total: int
+    checks: list[AtsCheckItem]
+
+
 # -------------------- Auth context --------------------
 
 

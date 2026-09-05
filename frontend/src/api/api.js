@@ -140,6 +140,16 @@ export const resumeApi = {
     return response.data;
   },
 
+  /**
+   * Run the ATS-format/structure checklist against the candidate's resume.
+   * Backed by `POST /api/resume/ats-check`. Returns a weighted score
+   * plus per-check pass/warn/fail items.
+   */
+  atsCheck: async ({ candidate }) => {
+    const response = await api.post("/api/resume/ats-check", { candidate });
+    return response.data;
+  },
+
   save: async (payload) => {
     const response = await api.post("/api/resume/save", payload);
     return response.data;

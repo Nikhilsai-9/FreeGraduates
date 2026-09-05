@@ -7,6 +7,7 @@ import Sidebar from "./components/Sidebar";
 import DashboardView from "./components/DashboardView";
 import ResumeBuilderView from "./components/ResumeBuilderView";
 import ResumeAnalyzerView from "./components/ResumeAnalyzerView";
+import AtsScannerView from "./components/AtsScannerView";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -72,9 +73,11 @@ function AuthenticatedWorkspace() {
               <ResumeBuilderView initialOptions={builderOptions} />
             )}
 
-            {(activeView === "analyzer" ||
-              activeView === "ats-checker" ||
-              activeView === "optimizer") && (
+            {activeView === "ats-checker" && (
+              <AtsScannerView />
+            )}
+
+            {(activeView === "analyzer" || activeView === "optimizer") && (
               <ResumeAnalyzerView />
             )}
 

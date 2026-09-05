@@ -28,6 +28,8 @@ from app.engine.schemas import JobTarget, ResumeStructured
 from app.models import (
     AnalyzeRequest,
     AnalyzeResponse,
+    AtsCheckRequest,
+    AtsCheckResponse,
     AuthUser,
     ExtractPdfResponse,
     GenerateResumeRequest,
@@ -38,6 +40,7 @@ from app.models import (
 )
 from app.security import get_current_user
 from app.services.analyzer import analyze_resume
+from app.services.ats import ats_check
 from app.services.docx_generator import render_resume_to_docx
 from app.services.markdown_generator import render_resume_to_markdown
 from app.services.pdf_extractor import extract_candidate_from_pdf
@@ -210,6 +213,20 @@ async def analyze(payload: AnalyzeRequest, user: AuthUser = Depends(get_current_
     """
     job_dict = payload.job.model_dump() if payload.job else None
     return analyze_resume(payload.candidate, job_dict)
+
+
+# ---------- Routes: ATS ----------
+
+
+@router.post("/ats-check", response_model=AtsCheckResponse)
+async def ats_check_endpoint(payload: AtsCheckRequest, user: AuthUser = Depends(get_current_user)):
+    """Run the ATS-compliance checklist against the candidate's resume.
+
+    Returns a weighted score plus a list of pass/warn/fail checks so the
+    UI can render a visual rubric. The scoring is deterministic and
+    rule-based (see `app/services/ats.py`).
+    """
+    return ats_check(payload.candidate)
 
 
 # ---------- Routes: CRUD ----------
