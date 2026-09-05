@@ -216,3 +216,35 @@ export const profileApi = {
     return response.data;
   },
 };
+
+export const optimizerApi = {
+  list: async () => {
+    const response = await api.get("/api/resume-optimizer");
+    return response.data;
+  },
+  create: async ({ resumeId, jobDescription, targetRole, targetCompany }) => {
+    const response = await api.post("/api/resume-optimizer", {
+      resumeId,
+      jobDescription,
+      targetRole,
+      targetCompany,
+    });
+    return response.data;
+  },
+  get: async (id) => {
+    const response = await api.get(`/api/resume-optimizer/${id}`);
+    return response.data;
+  },
+  analyze: async (id) => {
+    const response = await api.post(`/api/resume-optimizer/${id}/analyze`, {});
+    return response.data;
+  },
+  tailor: async (id) => {
+    const response = await api.post(`/api/resume-optimizer/${id}/tailor`, {});
+    return response.data;
+  },
+  remove: async (id) => {
+    const response = await api.delete(`/api/resume-optimizer/${id}`);
+    return response.data;
+  },
+};

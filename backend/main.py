@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from app.api.routes_health import router as health_router
 from app.api.routes_profile import router as profile_router
 from app.api.routes_resume import router as resume_router
+from app.api.routes_optimizer import router as optimizer_router
 from app.config import get_settings
 
 
@@ -51,7 +52,7 @@ def create_app() -> FastAPI:
     )
 
     # ---------- Routes ----------
-    for r in (health_router, profile_router, resume_router):
+    for r in (health_router, profile_router, resume_router, optimizer_router):
         app.include_router(r)
 
     # ---------- Global error handler ----------

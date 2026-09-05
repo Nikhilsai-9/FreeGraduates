@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -8,6 +8,7 @@ import DashboardView from "./components/DashboardView";
 import ResumeBuilderView from "./components/ResumeBuilderView";
 import ResumeAnalyzerView from "./components/ResumeAnalyzerView";
 import AtsScannerView from "./components/AtsScannerView";
+import OptimizerView from "./components/OptimizerView";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -18,7 +19,7 @@ import "./App.css";
 import "./components/ResumeBuilder.css";
 
 // Map the current URL pathname to the active view id used by the switcher.
-// The URL is the single source of truth — Sidebar reads & writes it directly.
+// The URL is the single source of truth â€” Sidebar reads & writes it directly.
 function viewFromPathname(pathname) {
   if (pathname.startsWith("/builder")) return "builder";
   if (pathname.startsWith("/dashboard")) return "dashboard";
@@ -36,7 +37,7 @@ function AuthenticatedWorkspace() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
-  // Derive activeView purely from the URL — no duplicate local state.
+  // Derive activeView purely from the URL â€” no duplicate local state.
   const activeView = useMemo(() => viewFromPathname(location.pathname), [location.pathname]);
 
   // Read ?template= and ?path= from the URL for /builder/new, so deep
@@ -54,7 +55,7 @@ function AuthenticatedWorkspace() {
 
   return (
     <div className={`unified-app-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
-      {/* Left Collapsible Sidebar — URL-driven, no shared activeView state. */}
+      {/* Left Collapsible Sidebar â€” URL-driven, no shared activeView state. */}
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -77,9 +78,10 @@ function AuthenticatedWorkspace() {
               <AtsScannerView />
             )}
 
-            {(activeView === "analyzer" || activeView === "optimizer") && (
+            {(activeView === "analyzer") && (
               <ResumeAnalyzerView />
             )}
+            {activeView === "optimizer" && <OptimizerView />}
 
             {activeView === "coach" && (
               <div className="coach-placeholder-panel">
@@ -120,7 +122,7 @@ export default function App() {
         <Route path="/results/:id" element={<Results />} />
         <Route path="/history" element={<History />} />
 
-        {/* Onboarding wizard — full-screen, no sidebar. New users hit this
+        {/* Onboarding wizard â€” full-screen, no sidebar. New users hit this
             immediately after signup until their profile is complete. */}
         <Route
           path="/onboarding"
@@ -131,7 +133,7 @@ export default function App() {
           }
         />
 
-        {/* Protected Unified Workspace — URL is the source of truth for the active view. */}
+        {/* Protected Unified Workspace â€” URL is the source of truth for the active view. */}
         <Route
           path="/dashboard"
           element={
@@ -193,3 +195,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+
