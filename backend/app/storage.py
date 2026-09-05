@@ -77,7 +77,10 @@ class ResumeStorage:
     def list_resumes(self, uid: str) -> list[ResumeSummary]:
         user_dir = self._user_dir(uid)
         out: list[ResumeSummary] = []
-        for path in sorted(user_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        # Only consider files shaped like resume records (resume-*.json).
+        # The user dir also holds `profile.json`, which has no `id` field
+        # and would otherwise crash the summary build below.
+        for path in sorted(user_dir.glob("resume-*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
             raw = self._read(path)
             if not raw:
                 continue

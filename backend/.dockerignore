@@ -1,17 +1,47 @@
-.env
-.env.*
+# FreeGraduates backend - files excluded from the Docker build context.
+
+# Local virtualenv + caches
+.venv
+venv
 __pycache__
+**/__pycache__
 *.pyc
 *.pyo
 .pytest_cache
+.mypy_cache
+
+# Runtime data (resumes, optimizations, etc.) - mounted as a volume instead.
+app/data/users/*
+app/data/resumes/*
+app/data/optimizations/*
+app/data/coach/*
+app/data/cover_letter/*
+!app/data/users/.gitkeep
+!app/data/resumes/.gitkeep
+!app/data/optimizations/.gitkeep
+!app/data/coach/.gitkeep
+!app/data/cover_letter/.gitkeep
+
+# Local secrets / Firebase credentials
+.env
+.env.local
+.env.*.local
+.env.*
+firebase-service-account.json
+*-credentials.json
+
+# VCS + editor junk
 .git
 .gitignore
 .vscode
 .idea
+Thumbs.db
+.DS_Store
+
+# Build / packaging
 Dockerfile
 .dockerignore
-package.json
-*.md
-LICENSE
-uploads/*
-!uploads/.gitkeep
+
+# Logs
+*.log
+

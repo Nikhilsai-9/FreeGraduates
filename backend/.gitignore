@@ -26,9 +26,19 @@ firebase-service-account.json
 app/data/cvs/*
 app/data/outputs/*
 app/data/users/*
+app/data/jds/*
+app/data/resumes/*
+app/data/optimizations/*
+app/data/coach/*
+app/data/cover_letter/*
 !app/data/cvs/.gitkeep
 !app/data/outputs/.gitkeep
 !app/data/users/.gitkeep
+!app/data/jds/.gitkeep
+!app/data/resumes/.gitkeep
+!app/data/optimizations/.gitkeep
+!app/data/coach/.gitkeep
+!app/data/cover_letter/.gitkeep
 app/data/uploads/
 
 # IDEs

@@ -1,0 +1,68 @@
+# FreeGraduates - full-stack local production orchestration.
+#
+# Usage:
+#   cp backend/.env.example backend/.env        # then edit backend/.env
+#   cp frontend/.env.example frontend/.env      # then edit frontend/.env
+#   docker compose up --build
+#
+# Backend:  http://localhost:8000  (docs at /docs)
+# Frontend: http://localhost:8080  (Vite static build served by nginx)
+#
+# Both services share the host's `backend/app/data` directory so user
+# resumes, optimizations, coach sessions, and cover letters persist
+# between container restarts.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: freegraduates-backend:latest
+    container_name: freegraduates-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      PORT: "8000"
+      DEV_AUTH_BYPASS: "${DEV_AUTH_BYPASS:-false}"
+      CLIENT_ORIGINS: "${CLIENT_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}"
+      CLIENT_ORIGINS_REGEX: "${CLIENT_ORIGINS_REGEX:-}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-1.5-flash}"
+      FIREBASE_SERVICE_ACCOUNT_PATH: "${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/firebase-service-account.json}"
+      FIREBASE_PROJECT_ID: "${FIREBASE_PROJECT_ID:-freegraduates}"
+      DATA_DIR: "/data"
+      MAX_UPLOAD_BYTES: "${MAX_UPLOAD_BYTES:-16777216}"
+    volumes:
+      # Persist user data + service account across container restarts.
+      - backend-data:/data
+      # Mount the service account file if it lives on the host (read-only).
+      - ${FIREBASE_SERVICE_ACCOUNT_PATH_HOST:-./backend/firebase-service-account.json}:/app/firebase-service-account.json:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "${VITE_API_URL:-http://localhost:8000}"
+    image: freegraduates-frontend:latest
+    container_name: freegraduates-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    # Backend lives on the docker network -- nginx proxies /api/* to it.
+    environment:
+      BACKEND_UPSTREAM: "http://backend:8000"
+
+volumes:
+  backend-data:
+    driver: local

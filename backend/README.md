@@ -68,6 +68,10 @@ fabrication is possible in this mode.
 ## API contract
 
 All routes require a Bearer token issued by the Firebase JS SDK.
+In development (`DEV_AUTH_BYPASS=true`) the `x-user-uid` header is
+honored instead.
+
+### Core
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -80,6 +84,59 @@ All routes require a Bearer token issued by the Firebase JS SDK.
 | `GET`  | `/api/resume/{id}` | Fetch one resume |
 | `DELETE` | `/api/resume/{id}` | Delete a resume |
 | `POST` | `/api/resume/{id}/export?format=docx\|pdf\|md\|json` | Stream an export |
+
+### Profile & onboarding (Commit 1)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET`  | `/api/profile` | Fetch the authenticated user's profile |
+| `PUT`  | `/api/profile` | Upsert the profile |
+| `POST` | `/api/profile/onboarding` | Mark the onboarding wizard as completed |
+
+### Workspace (Commit 2)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/workspace/resume` | Create a blank resume shell |
+| `GET`  | `/api/workspace/resume/{id}` | Fetch a workspace draft |
+
+### Analyzer & ATS (Commits 3-4)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/analyzer` | Score a resume against a job description |
+| `POST` | `/api/ats` | Detailed ATS-compliance scan |
+
+### Optimizer (Commit 5)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/optimizer` | Tailor a resume to a JD (LLM, rules fallback) |
+| `GET`  | `/api/optimizer` | List optimisations |
+| `GET`  | `/api/optimizer/{id}` | Fetch one |
+| `DELETE` | `/api/optimizer/{id}` | Delete one |
+
+### AI Coach & interview prep (Commit 6)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/coach` | Generate interview / behavioural questions |
+| `GET`  | `/api/coach` | List sessions |
+| `GET`  | `/api/coach/{id}` | Fetch one (with `questions[]`) |
+| `PUT`  | `/api/coach/{id}` | Update answers / status |
+| `POST` | `/api/coach/{id}/regenerate` | Regenerate questions with new params |
+| `DELETE` | `/api/coach/{id}` | Delete one |
+
+### Cover letter generator (Commit 7)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/cover-letter` | Generate a JD-tailored cover letter |
+| `GET`  | `/api/cover-letter` | List letters |
+| `GET`  | `/api/cover-letter/{id}` | Fetch one |
+| `PUT`  | `/api/cover-letter/{id}` | Update subject / body / status |
+| `POST` | `/api/cover-letter/{id}/regenerate` | Regenerate with new tone / length |
+| `DELETE` | `/api/cover-letter/{id}` | Delete one |
 
 ## Rule layers (the constitution)
 
