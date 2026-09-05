@@ -1,13 +1,9 @@
 # FreeGraduates AI Resume Builder — Backend
 
 The Python backend that powers FreeGraduates' resume generation. Built on
-FastAPI, LangGraph, and Google Gemini, with the rule system inherited from
-[`haderalva/ai-resume-builder`](https://github.com/haderalva/ai-resume-builder)
-(CC BY-NC 4.0).
-
-> **Attribution** — The rule system in `app/data/rules/layer_*.md` and the
-> LangGraph workflow architecture are adapted from the original repository.
-> See `LICENSE` and the project root README for details.
+FastAPI, LangGraph, and Google Gemini. The rule system in
+`app/data/rules/layer_*.md` is original FreeGraduates content authored
+in-house for this project.
 
 ## Architecture
 
@@ -87,16 +83,21 @@ All routes require a Bearer token issued by the Firebase JS SDK.
 
 ## Rule layers (the constitution)
 
-* **Layer A** — Mandatory operational rules (data integrity, length caps).
-* **Layer B** — Detailed reference rules (seniority, dates, contacts).
-* **Layer C** — Hybrid output mode (HTML + Markdown + JSON schema).
-* **Layer D** — Quality assurance (validation, length & safety checks).
+* **Layer A** — Truth & Source Authority. The non-negotiable rules:
+  no fabrication, no JD-echo, only candidate-supplied facts.
+* **Layer B** — Candidate Input Contract. Schema tiers, seniority
+  inference, length budgets, missing-field protocol.
+* **Layer C** — Structured Output & Presentation. Canonical section
+  order, Markdown conventions, ATS-safe rendering hooks.
+* **Layer D** — Validation & Recovery. QA checklist, auto-correction
+  loop, deterministic fallback path.
 
 These files are *never* modified at runtime; they are injected verbatim
 into the LLM's system context for every generation call.
 
 ## License
 
-Source repository: haderalva/ai-resume-builder
-Licensed under Creative Commons Attribution-NonCommercial 4.0 International.
-FreeGraduates' modifications are released under the same terms — see `LICENSE`.
+This backend module of FreeGraduates is released under the same terms
+as the project root — see the root `LICENSE` (MIT, © 2026 Nikhil Sai
+Kenguri). Sub-modules retain their original licenses as recorded in
+their respective `ATTRIBUTION.md` files.

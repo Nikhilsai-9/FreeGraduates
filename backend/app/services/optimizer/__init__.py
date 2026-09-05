@@ -2,9 +2,8 @@
 
 Adapts selected, useful logic from the open-source project
 ``JeevansSP/resume-optimizer`` (MIT License) — primarily the dual-extraction
-PDF pipeline, deterministic keyword/skill extraction, and Layer A
-fact-preservation rules for AI tailoring — and integrates it cleanly into
-the FreeGraduates architecture.
+PDF pipeline and the deterministic keyword/skill extraction — and integrates
+it cleanly into the FreeGraduates architecture.
 
 No code from the source repository's Vue frontend is copied. The
 FreeGraduates React UI is the canonical UI.

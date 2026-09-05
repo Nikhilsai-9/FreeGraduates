@@ -1,14 +1,15 @@
 """Loads the four "Layer" rule files that govern generation. These files
-are the constitution of the AI resume system — nothing in the code is
-allowed to contradict them.
+are the constitution of the FreeGraduates AI resume system — nothing
+in the code is allowed to contradict them.
 
-Layer A — Mandatory Operational Rules (do/don't, falsification, length caps).
-Layer B — Detailed Reference Rules (seniority, dates, contact format, etc.).
-Layer C — Hybrid Output Mode (HTML + Markdown + JSON schema, ATS-safe rules).
-Layer D — Quality Assurance Layer (post-generation validation rules).
+Layer A — Truth & Source Authority (the non-negotiable constitution).
+Layer B — Candidate Input Contract (input schema, seniority, length budgets).
+Layer C — Structured Output & Presentation (Markdown, ATS-safe rendering).
+Layer D — Validation & Recovery (post-generation QA, correction loop).
 
-The original files are copied verbatim from haderalva/ai-resume-builder
-(CC BY-NC 4.0). We preserve attribution in README.md.
+The layer files in ``backend/app/data/rules/`` are original FreeGraduates
+content authored in-house for this project. They are not adapted from
+any upstream source.
 """
 
 from __future__ import annotations

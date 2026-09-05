@@ -1,17 +1,21 @@
 """Structured resume schema (the AI output contract).
 
-This schema is the "DNA" of every generated resume. It is derived directly
-from the haderalva/ai-resume-builder project (Layer C — Hybrid Output Mode)
-and is the single source of truth that:
+This schema is the "DNA" of every resume FreeGraduates generates. It is
+the single source of truth that:
 
 * The LangGraph generator targets with `response_format={"type": "json_schema"}`.
-* The QA layer validates against.
+* The QA agent validates against.
 * The export pipelines (DOCX, PDF, Markdown) render from.
 
-Adapting it for FreeGraduates:
-* Field naming stays snake_case so the upstream rule text remains valid.
-* Optional sections are preserved so student-friendly resumes (projects,
-  achievements, certifications) are first-class.
+Design notes:
+* Field naming stays snake_case for stable JSON contracts across the
+  pipeline (API → engine → renderer).
+* Optional sections are first-class so student-friendly resumes
+  (projects, achievements, certifications, volunteering) are not
+  squeezed into a single bucket.
+* Layer A — Truth & Source Authority governs what the AI is allowed to
+  put in any of these fields; this module defines the *shape*, not the
+  *content*.
 """
 
 from __future__ import annotations

@@ -1,227 +1,166 @@
-# === **Layer D — Quality Assurance Layer** ===
+# Layer D — Validation & Recovery
 
-## **1. Purpose**
-
-This layer is the **final validation and correction stage** applied after the résumé is generated according to Layers A, B, and C.
-Its function is to **ensure strict compliance**, remove inconsistencies, enforce formatting rules, and guarantee that the output is valid, ATS-friendly, accurate, and aligned with the input data.
-
-No résumé may be returned to the user unless it fully passes the Quality Assurance (QA) pipeline.
+> **Purpose.** Defines the QA pipeline that runs after generation:
+> what the engine asserts, how it auto-corrects, when it gives up, and
+> what the deterministic fallback produces when the AI path fails.
 
 ---
 
-## **2. Input**
+## D.1 Pipeline overview
 
-This layer evaluates the **final résumé draft** produced by the system after:
+```
+   ┌────────────┐    ┌─────────────┐    ┌────────────┐
+   │ rules_loader│ -> │ generator    │ -> │ qa_agent    │
+   └────────────┘    └─────────────┘    └────────────┘
+                          │                   │
+                          v                   v
+                    state.draft         state.qa_report
+                                              │
+                                              v
+                                       auto-corrector (loop)
+                                              │
+                                              v
+                                       state.final
+```
 
-1. Applying content rules (Layer A)
-2. Applying structural and reference rules (Layer B)
-3. Applying formatting and view rules (Layer C)
+Every box is a node in the LangGraph workflow defined in
+`app.engine.graph`. Each emits a `WorkflowState` patch; none mutates
+state outside that contract.
 
 ---
 
-## **3. QA Validation Pipeline**
+## D.2 Pre-generation validation
 
-The pipeline is executed **sequentially**.
-If a step fails, the model must automatically correct the issue, then restart the pipeline from Step 1.
+Before the generator runs, `rules_loader` asserts:
 
----
+- `CandidateInput` schema passes Pydantic validation.
+- At least one `experience` entry exists.
+- `skills` is non-empty.
+- `email` is a syntactically valid address (RFC 5322 light check).
+- `rules_text` is non-empty after concatenation (all four layers
+  loaded).
 
-## **3.1. Structural Validation**
-
-### **3.1.1 Required Sections**
-
-```
-assert "Summary" exists
-assert "Skills" exists
-assert "Experience" exists
-assert "Education" exists
-```
-
-### **3.1.2 Section Order**
-
-```
-assert sections == [
-    Header,
-    Summary,
-    Skills,
-    Experience,
-    Education,
-    Optional Sections (Projects, Awards, Publications, Teaching)
-]
-```
-
-### **3.1.3 Section Integrity**
-
-```
-assert no empty sections
-assert no duplicated sections
-assert section titles use correct formatting (## Title)
-```
+Failure at this stage raises `EnginePrecheckError` and short-circuits
+to the deterministic fallback (D.6).
 
 ---
 
-## **3.2. Formatting Validation**
+## D.3 Post-generation assertions
 
-### **3.2.1 ATS Compliance**
+The `qa_agent` runs a checklist over `state.draft`. Each item returns
+`pass | warn | fail`. The full report is attached to
+`state.qa_report` and surfaced in the API response.
 
-```
-assert no tables
-assert no emojis
-assert no icons
-assert no images
-```
+### Truth invariants (must pass)
 
-### **3.2.2 Markdown Restrictions**
+| ID    | Check                                                         |
+|-------|---------------------------------------------------------------|
+| Q-T1  | No token in the draft appears that was not in the candidate input or a generator-generated connector word. |
+| Q-T2  | No metric in the draft exceeds the candidate's stated metric. |
+| Q-T3  | No role title in the draft was changed from the candidate's input. |
+| Q-T4  | No company name in the draft was changed from the candidate's input. |
+| Q-T5  | No date in the draft is later than the candidate's `is_current` flag indicates. |
 
-```
-assert no markdown hyperlinks (no [text](url))
-assert no anchor text
-assert section titles use "##"
-assert bold is used only where allowed
-```
+### Structure invariants (must pass)
 
-### **3.2.3 Bullet Formatting**
+| ID    | Check                                                         |
+|-------|---------------------------------------------------------------|
+| Q-S1  | Sections appear in canonical order (C.1).                     |
+| Q-S2  | All five required sections present (Header, Summary, Skills, Work Experience, Education or omitted-with-warning). |
+| Q-S3  | No tables, images, or emojis in `rendered_markdown`.          |
+| Q-S4  | All bullets start with `- ` and a verb.                       |
 
-```
-assert bullet character == "-"
-assert no nested bullets
-assert bullet indentation is consistent
-```
+### Length invariants (warn / fail)
 
-### **3.2.4 Links and Email**
+| ID    | Check                                                         |
+|-------|---------------------------------------------------------------|
+| Q-L1  | Total draft character count <= seniority hard cap (B.3). Fail if exceeded. |
+| Q-L2  | Total draft character count within 90%–110% of target. Warn if outside. |
 
-```
-assert all URLs are plain full URLs (https://...)
-assert email is plain text (no markdown)
-```
+### Coverage invariants (warn)
 
----
-
-## **3.3. Content Validation**
-
-### **3.3.1 No Fabricated Content**
-
-```
-assert no invented skills
-assert no invented experiences
-assert no invented dates
-assert no invented achievements
-assert no invented education items
-```
-
-### **3.3.2 Consistency With JSON**
-
-```
-assert names match JSON exactly
-assert job titles match JSON
-assert companies match JSON
-assert dates match JSON
-assert technologies match JSON
-```
-
-### **3.3.3 Summary Voice**
-
-```
-assert summary_person == generation_params.summary_person OR default
-```
-
-### **3.3.4 Language Validation**
-
-```
-assert text language == generation_params.language OR detected JD language OR English fallback
-```
+| ID    | Check                                                         |
+|-------|---------------------------------------------------------------|
+| Q-C1  | Each required JD skill is mentioned at least once (only when JD supplied). |
+| Q-C2  | Each top-3 candidate skill (by frequency in experience) appears in Skills section. |
 
 ---
 
-## **3.4. Keyword Validation**
+## D.4 Auto-correction loop
 
-### **3.4.1 Application Rules**
+When `qa_report` contains any `fail`, the engine enters the correction
+loop:
 
-```
-assert keywords appear only in Summary, Skills, and Experience
-```
+1. Compose a focused revision prompt that quotes the failed checks
+   and the offending lines.
+2. Call the generator again with `(state.draft, rules_text, revision_prompt)`.
+3. Re-run the QA checklist on the new draft.
+4. Repeat until either:
+   - all checks pass, **or**
+   - 3 attempts have been made.
 
-### **3.4.2 Keyword Mode**
-
-If `keyword_mode == conservative`:
-
-```
-assert no more than 5–8 key terms included
-```
-
-If `keyword_mode == aggressive`:
-
-```
-assert majority of core job-description keywords appear at least once
-```
-
-### **3.4.3 No Keyword Stuffing**
-
-```
-assert no keyword appears more than 3 times (unless it is a technology/tool)
-```
+The attempt counter is `state.correction_attempts`. Exceeding 3 triggers
+the deterministic fallback (D.6). The candidate is never re-billed for
+tokens spent in the loop; the cost is absorbed by the pipeline.
 
 ---
 
-## **3.5. Seniority Rules & Length Validation**
+## D.5 Failure modes and give-up conditions
 
-### **3.5.1 Seniority-Based Max Size**
+The engine gives up and returns `EngineFallbackResult` when:
 
-```
-assert total_length <= max_chars_for_seniority OR max_chars_override
-```
+- LLM call returns a schema-invalid `ResumeStructured` after 2 retries.
+- Pre-generation validation fails (D.2).
+- Correction loop exhausts 3 attempts (D.4).
+- LLM call raises a transient error and the circuit breaker is open
+  (see `app.services.circuit_breaker`).
 
-### **3.5.2 Section Preservation**
-
-```
-assert Experience and Skills are never reduced or removed
-```
-
----
-
-## **4. Auto-Correction Rules**
-
-If any assertion fails, the system must:
-
-1. **Identify the cause**
-2. **Fix the issue automatically**
-3. **Re-run the QA pipeline from Step 1**
-
-Corrections include:
-
-* Removing malformed markdown
-* Correcting section titles
-* Enforcing bullet character rules
-* Fixing order inconsistencies
-* Rewriting oversize summaries
-* Trimming overly long bullet lists
-* Removing repeated or irrelevant keywords
-* Restoring accuracy when a detail diverges from the JSON
+The HTTP response code for fallback is `200` with a `degraded: true`
+flag — callers can choose to display a "we used a simplified version"
+banner.
 
 ---
 
-## **5. Completion Criteria**
+## D.6 Deterministic fallback
 
-The résumé is approved only if:
+When the AI path is unavailable, `app.engine.fallback` produces a
+minimal-but-correct resume directly from the candidate input:
 
-```
-all asserts pass successfully
-no corrections required in two consecutive QA passes
-```
+- Header, Summary (auto-generated from title + skills, Layer B.4),
+  Skills (sorted alphabetically), Work Experience (candidate bullets
+  verbatim, lightly trimmed), Education.
+- No JD alignment (cannot be done without generation).
+- Length hard cap = senior band (5,500 chars). Excess content is
+  trimmed from the oldest role first.
 
-Once the output is fully validated, the document is released as the final résumé.
+The fallback output is guaranteed to satisfy Q-T1, Q-S1, Q-S2, Q-S3,
+Q-S4, and Q-L1 by construction.
 
 ---
 
-## **6. Optional Developer Debug Output**
+## D.7 Audit log
 
-(Not included in the résumé returned to the user.)
+Every generation writes a structured record to the audit log
+(`app.services.audit`):
 
-If requested through `generation_params.debug = true`, generate a QA report:
+```
+{
+  "request_id": "uuid",
+  "ts": "iso8601",
+  "seniority": "mid",
+  "has_jd": true,
+  "draft_chars": 4123,
+  "qa": {"pass": 11, "warn": 2, "fail": 0},
+  "correction_attempts": 0,
+  "fallback_used": false,
+  "warnings": ["..."]
+}
+```
 
-* List of passed assertions
-* List of corrected issues
-* Final character count
-* Keyword usage summary
-* Any ambiguous or missing data from the JSON
+The audit log is append-only and never contains candidate content
+beyond the metrics above. It exists to support post-hoc pipeline tuning
+without leaking candidate data.
 
+---
+
+# End of Layer D

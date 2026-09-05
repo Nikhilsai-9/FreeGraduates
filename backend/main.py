@@ -33,7 +33,9 @@ def create_app() -> FastAPI:
         version="2.0.0",
         description=(
             "AI-powered resume builder for FreeGraduates. "
-            "Source: haderalva/ai-resume-builder (CC BY-NC 4.0)."
+            "Generates ATS-safe, truth-constrained resumes from "
+            "candidate-supplied data, with a deterministic fallback "
+            "when the AI path is unavailable."
         ),
     )
 

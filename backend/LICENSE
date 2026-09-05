@@ -1,29 +1,17 @@
 FreeGraduates AI Resume Builder — backend module
 
-Adapted portions of this module (LangGraph workflow architecture,
-structured-resume schema, PDF extraction strategy, and the four rule
-layers under `app/data/rules/`) are derived from
+Copyright (c) 2026 Nikhil Sai Kenguri
 
-    haderalva/ai-resume-builder
-    https://github.com/haderalva/ai-resume-builder
+This backend module is part of the FreeGraduates project and is released
+under the MIT License, the same terms as the project root. The full text
+of the root LICENSE applies to this module unless an individual file
+carries its own ATTRIBUTION.md declaring a different upstream licence.
 
-which is licensed under the Creative Commons Attribution-NonCommercial
-4.0 International License (CC BY-NC 4.0).
+Sub-modules and their third-party attributions:
 
-You are free to:
+* `app/services/optimizer/` — incorporates code from JeevansSP
+  (see `app/services/optimizer/ATTRIBUTION.md`).
 
-* Share — copy and redistribute the material in any medium or format.
-* Adapt — remix, transform, and build upon the material.
-
-Under the following terms:
-
-* Attribution — You must give appropriate credit to haderalva as the
-  original author of the rule system and workflow architecture, provide
-  a link to the license, and indicate if changes were made.
-* NonCommercial — You may not use the material for commercial purposes.
-
-Full license text: https://creativecommons.org/licenses/by-nc/4.0/
-
-FreeGraduates-specific additions (FastAPI layer, React-facing API
-contracts, per-user storage, Firebase auth integration, new templates)
-are released under the same CC BY-NC 4.0 terms.
+No other upstream material is incorporated into this module. The rule
+files in `app/data/rules/layer_*.md` and the LangGraph workflow are
+original FreeGraduates content authored for this project.

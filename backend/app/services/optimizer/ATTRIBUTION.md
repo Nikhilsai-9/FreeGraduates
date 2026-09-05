@@ -10,14 +10,14 @@ that project:
 
 - **Dual PDF extraction** — text path (pdfplumber / pypdf) with a
   Gemini-vision OCR fallback for scanned / image-only PDFs.
-- **Layer A fact preservation** — when the AI rewrites a resume, it is
-  forbidden from inventing companies, job titles, degrees, dates,
-  metrics, technologies, certifications, or achievements that are not
-  present in the user's source resume.
 - **Two-phase generation** — analysis (deterministic scoring) is separate
   from AI tailoring so the user can review and edit before exporting.
 - **Background task tracking** — long-running tailoring runs are tracked
   with a status so the UI can poll for completion.
+
+The fact-preservation rules that govern FreeGraduates' AI tailoring
+live in `backend/app/data/rules/layer_a.md` and are original
+FreeGraduates content; they are not derived from JeevansSP's project.
 
 What is **NOT** taken from the source repository:
 
