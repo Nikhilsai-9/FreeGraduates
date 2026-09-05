@@ -4,10 +4,12 @@
 // =====================================================================
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { resumeApi, ExtractError } from "../api/api";
 import {
   FileText, Upload, PenTool, Layout, ChevronRight, ChevronLeft,
-  Check, X, AlertCircle, RefreshCw, Download, Save, Eye, ZoomIn, ZoomOut
+  Check, X, AlertCircle, RefreshCw, Download, Save, Eye, ZoomIn, ZoomOut,
+  History
 } from "lucide-react";
 
 // ---------- Candidate shape (matches backend) ----------
@@ -607,9 +609,14 @@ function StartStep({
 
       {savedIds.length > 0 && (
         <div className="fg-saved-section">
-          <h4 className="fg-saved-section__title">Your saved resumes</h4>
+          <div className="fg-saved-section__head">
+            <h4 className="fg-saved-section__title">Your saved resumes</h4>
+            <Link to="/history" className="fg-btn fg-btn--link fg-btn--sm">
+              View all →
+            </Link>
+          </div>
           <div className="fg-saved-list">
-            {savedIds.map((r) => (
+            {savedIds.slice(0, 4).map((r) => (
               <div key={r.id} className="fg-saved-item">
                 <FileText size={16} />
                 <div className="fg-saved-item__info">
@@ -624,6 +631,16 @@ function StartStep({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Always show a single "See all resumes" link so users can find
+          the History workspace even when they have 0 saved items. */}
+      {savedIds.length === 0 && (
+        <div className="fg-saved-section fg-saved-section--empty">
+          <Link to="/history" className="fg-btn fg-btn--ghost fg-btn--block">
+            <History size={14} /> See all saved resumes
+          </Link>
         </div>
       )}
     </div>
