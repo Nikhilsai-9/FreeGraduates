@@ -1,480 +1,450 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Sparkles,
-  Upload,
-  Check,
-  X,
-  CheckCheck,
-  Download,
-  ArrowLeft,
-  FileText,
-  TrendingUp,
-  AlertCircle,
-  RotateCcw
-} from "lucide-react";
-import html2pdf from "html2pdf.js";
+// =====================================================================
+// FreeGraduates — AI Resume Analyzer (diagnostic dashboard)
+//
+// WHAT THIS VIEW IS
+//   Pure diagnose → explain → recommend. NO diff approval UI lives here.
+//   The diff/approval screen is the OPTIMIZER's job (see OptimizerView).
+//
+// DATA SOURCE
+//   Loads the most-recent saved resume from the backend. If there is none
+//   the user sees a real empty state — we never fake a candidate.
+//
+//   `POST /api/resume/analyze` → returns
+//     { score, verdict, matchedKeywords, missingKeywords,
+//       matchedCount, missingCount, breakdown, diffs }
+//
+//   `diffs` are kept as recommendations only (no Apply buttons).
+// =====================================================================
+
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { resumeApi } from "../api/api";
 import Toast from "./Toast";
+import Loader from "./Loader";
+import {
+  ArrowLeft,
+  RefreshCw,
+  FileText,
+  CheckCircle2,
+  AlertTriangle,
+  TrendingUp,
+  Sparkles,
+  Wand2,
+  Target,
+  Crosshair,
+  Lightbulb,
+  ListChecks,
+} from "lucide-react";
+import "./ResumeAnalyzerView.css";
 
-/** Translate the editor-shaped candidate into the backend API shape. */
-function toBackendCandidate(r) {
-  return {
-    personal_info: r.personal ? { ...r.personal } : {},
-    summary: r.personal?.summary || r.summary || "",
-    work_experience: Array.isArray(r.experience) ? r.experience : [],
-    education: Array.isArray(r.education) ? r.education : [],
-    skills: Array.isArray(r.skills) ? r.skills : [],
-    projects: Array.isArray(r.projects) ? r.projects : [],
-  };
+const TABS = [
+  { id: "overview",  label: "Overview" },
+  { id: "keywords",  label: "Keywords" },
+  { id: "sections",  label: "Sections" },
+  { id: "actions",   label: "Recommendations" },
+];
+
+function verdictCopy(verdict) {
+  switch (verdict) {
+    case "excellent": return { label: "Excellent", tone: "excellent" };
+    case "good":      return { label: "Strong",    tone: "good"      };
+    case "fair":      return { label: "Developing",tone: "fair"      };
+    default:          return { label: "Needs Work",tone: "poor"      };
+  }
+}
+
+function scoreTone(score) {
+  if (score >= 85) return "excellent";
+  if (score >= 70) return "good";
+  if (score >= 50) return "fair";
+  return "poor";
 }
 
 export default function ResumeAnalyzerView() {
   const navigate = useNavigate();
-  const goHome = () => navigate("/dashboard");
-  // Step: 'input' | 'diff'
-  const [step, setStep] = useState("diff");
-  const [jobDescription, setJobDescription] = useState(
-    "Senior Full Stack Engineer needed. Required skills: TypeScript, React, Node.js, Kubernetes, Redis, Docker, CI/CD pipelines, distributed systems."
-  );
-  const [analyzing, setAnalyzing] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
 
-  const documentRef = useRef(null);
+  const [resumeId, setResumeId]           = useState(null);
+  const [versionName, setVersionName]     = useState("");
+  const [jobText, setJobText]             = useState("");
+  const [analysis, setAnalysis]           = useState(null);
+  const [running, setRunning]             = useState(false);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState("");
+  const [analyzedAt, setAnalyzedAt]       = useState(null);
+  const [tab, setTab]                     = useState("overview");
+  const [savedResumes, setSavedResumes]   = useState([]);
 
-  // Base Resume Data
-  const [resumeData, setResumeData] = useState({
-    personal: {
-      fullName: "Nikhil Sai",
-      email: "nikhil.sai@freegraduates.com",
-      phone: "+1 (555) 432-8901",
-      location: "San Francisco, CA",
-      linkedin: "linkedin.com/in/nikhilsai",
-      github: "github.com/nikhilsai",
-      summary: "Software Engineer specializing in scalable fullstack web architectures and distributed systems. Proven ability to optimize API throughput and design intuitive user interfaces."
-    },
-    experience: [
-      {
-        id: "exp-1",
-        role: "Software Engineering Intern",
-        company: "TechNova Cloud Systems",
-        location: "Remote",
-        startDate: "Jun 2025",
-        endDate: "Aug 2025",
-        description: "Engineered scalable REST APIs in Node.js and Go, reducing query latency by 34%.\nContainerized microservices using Docker and automated CI/CD pipelines via GitHub Actions.\nCollaborated with UI team to build accessible React dashboards serving 12,000+ daily active users."
-      },
-      {
-        id: "exp-2",
-        role: "Undergraduate Research Assistant",
-        company: "Autonomous Systems Lab",
-        location: "Campus",
-        startDate: "Jan 2024",
-        endDate: "May 2025",
-        description: "Implemented vector search algorithms for real-time sensor anomaly detection in Python.\nBenchmarked model inference times across edge devices, achieving 18fps sustained throughput."
-      }
-    ],
-    skills: ["TypeScript", "JavaScript", "Python", "React.js", "Node.js", "Go", "PostgreSQL", "Docker", "AWS", "Git"]
-  });
-
-  // Diff Analysis Data — empty placeholder; we call the backend on mount
-  // (after best-effort prefill from saved resumes) and on every refresh.
-  const [analysisResult, setAnalysisResult] = useState({
-    score: 0,
-    verdict: "pending",
-    matchedKeywords: [],
-    missingKeywords: [],
-    matchedCount: 0,
-    missingCount: 0,
-    breakdown: {},
-    diffs: [],
-  });
-  const [loadedFromBackend, setLoadedFromBackend] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-
-  // Best-effort prefill: load most-recent saved resume and mirror its
-  // job description into the analyzer. Failure is non-fatal — the seed
-  // candidate stays usable.
+  // ---------- Load most-recent saved resume ----------
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const list = await resumeApi.list();
-        if (cancelled || !Array.isArray(list) || list.length === 0) return;
-        const latest = list[0];
-        const rec = await resumeApi.get(latest.id);
-        if (cancelled || !rec || !rec.candidate) return;
-        const c = rec.candidate;
-        const pi = c.personal_info || {};
-        setResumeData({
-          personal: { ...pi, summary: c.summary || pi.summary || "" },
-          experience: Array.isArray(c.work_experience) ? c.work_experience : [],
-          education: Array.isArray(c.education) ? c.education : [],
-          skills: Array.isArray(c.skills) ? c.skills : [],
-          projects: Array.isArray(c.projects) ? c.projects : [],
-        });
-        if (rec.job?.role || rec.job?.company) {
+        if (cancelled) return;
+        const arr = Array.isArray(list) ? list : [];
+        setSavedResumes(arr);
+        if (arr.length === 0) { setLoading(false); return; }
+        const latest = arr[0];
+        setResumeId(latest.id);
+        setVersionName(latest.versionName || "Latest resume");
+        if (latest.job?.description) {
           const parts = [];
-          if (rec.job.role) parts.push(`Role: ${rec.job.role}`);
-          if (rec.job.company) parts.push(`Company: ${rec.job.company}`);
-          if (rec.job.description) parts.push(rec.job.description);
-          setJobDescription(parts.join("\n\n"));
+          if (latest.job.role) parts.push(`Role: ${latest.job.role}`);
+          if (latest.job.company) parts.push(`Company: ${latest.job.company}`);
+          if (latest.job.description) parts.push(latest.job.description);
+          setJobText(parts.join("\n\n"));
         }
-        setLoadedFromBackend(true);
       } catch (err) {
-        console.warn("Could not prefill analyzer from saved resumes:", err);
+        if (!cancelled) setError("Could not load saved resumes: " + (err.message || err));
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  // Run a fresh analysis against the backend.
+  // ---------- Run analysis ----------
   const runAnalysis = async () => {
+    if (!resumeId) return;
     try {
-      setAnalyzing(true);
+      setRunning(true);
+      setError("");
+      const rec = await resumeApi.get(resumeId);
+      if (!rec || !rec.candidate) {
+        setError("This resume has no content to analyze yet.");
+        return;
+      }
       const result = await resumeApi.analyze({
-        candidate: toBackendCandidate(resumeData),
-        job: { role: "", company: "", description: jobDescription },
+        candidate: rec.candidate,
+        job: { role: "", company: "", description: jobText },
       });
-      setAnalysisResult(
-        result || { score: 0, verdict: "pending", matchedKeywords: [], missingKeywords: [], breakdown: {}, diffs: [] }
-      );
-      setStep("diff");
+      setAnalysis(result || null);
+      setAnalyzedAt(new Date());
     } catch (err) {
-      console.error("Analyzer error:", err);
-      setToastMessage(
-        err.response?.data?.detail || err.message || "Analyzer service is unavailable. Please try again."
-      );
+      setError(err.response?.data?.detail || err.message || "Analyzer service is unavailable.");
     } finally {
-      setAnalyzing(false);
+      setRunning(false);
     }
   };
 
-  // Run once after we have a prefill (or straight away with the seed).
+  // Auto-run once a resume is loaded.
   useEffect(() => {
-    runAnalysis();
+    if (resumeId && !analysis && !running) runAnalysis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadedFromBackend]);
+  }, [resumeId]);
 
-  const handleRunAnalysis = () => runAnalysis();
+  const score = analysis?.score ?? 0;
+  const verdict = analysis?.verdict || "needs-work";
+  const breakdown = analysis?.breakdown || {};
+  const matched = analysis?.matchedKeywords || [];
+  const missing = analysis?.missingKeywords || [];
+  const diffs   = analysis?.diffs || [];
 
-  // Toggle individual diff acceptance
-  const setDiffStatus = (diffId, status) => {
-    setAnalysisResult((prev) => ({
-      ...prev,
-      diffs: prev.diffs.map((d) => (d.id === diffId ? { ...d, status } : d))
-    }));
-  };
+  const strengths  = useMemo(() => buildStrengths(breakdown, diffs),  [breakdown, diffs]);
+  const weaknesses = useMemo(() => buildWeaknesses(breakdown, diffs), [breakdown, diffs]);
+  const sections   = useMemo(() => buildSections(breakdown, diffs),   [breakdown, diffs]);
+  const priorities = useMemo(() => buildPriorities(diffs, breakdown), [diffs, breakdown]);
 
-  // Master Approve All
-  const handleApproveAll = () => {
-    setAnalysisResult((prev) => ({
-      ...prev,
-      diffs: prev.diffs.map((d) => ({ ...d, status: "accepted" }))
-    }));
-  };
+  if (loading) return <Loader message="Loading analyzer…" />;
 
-  // Master Reject All
-  const handleRejectAll = () => {
-    setAnalysisResult((prev) => ({
-      ...prev,
-      diffs: prev.diffs.map((d) => ({ ...d, status: "rejected" }))
-    }));
-  };
-
-  // Compute accepted counts
-  const acceptedCount = analysisResult.diffs.filter((d) => d.status === "accepted").length;
-  const totalDiffs = analysisResult.diffs.length;
-
-  // Export PDF with accepted changes
-  const handleExportDiffPDF = () => {
-    if (!documentRef.current) return;
-    setIsExporting(true);
-    const opt = {
-      margin: 8,
-      filename: `${resumeData.personal.fullName.replace(/\s+/g, "_")}_AI_Optimized_Resume.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-    };
-
-    html2pdf()
-      .set(opt)
-      .from(documentRef.current)
-      .save()
-      .then(() => setIsExporting(false))
-      .catch(() => {
-        window.print();
-        setIsExporting(false);
-      });
-  };
+  if (savedResumes.length === 0) {
+    return (
+      <div className="az-page az-empty">
+        <FileText size={36} className="az-empty__icon" />
+        <h2>No resume yet</h2>
+        <p>Build your first resume, then come back here for an in-depth analysis.</p>
+        <button type="button" className="az-btn az-btn--primary" onClick={() => navigate("/builder/new")}>
+          <Sparkles size={14} /> Create your first resume
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="analyzer-view-container">
-      <Toast message={toastMessage} type="error" onClose={() => setToastMessage("")} />
-      {/* Top Header Controls */}
-      <div className="analyzer-top-bar">
-        <div className="analyzer-bar-left">
-          <button
-            type="button"
-            className="btn-back-nav"
-            onClick={goHome}
-          >
-            <ArrowLeft size={16} />
-            <span>Dashboard</span>
+    <div className="az-page">
+      <Toast message={error} type="error" onClose={() => setError("")} />
+
+      <header className="az-header">
+        <div className="az-header__left">
+          <button type="button" className="az-btn az-btn--ghost az-btn--sm" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft size={14} /> Dashboard
           </button>
-          <div className="score-summary-pill">
-            <TrendingUp size={15} className="green-icon" />
-            <span>ATS Compatibility: <strong>{analysisResult.score}%</strong></span>
-          </div>
-          <div className="approved-counter-tag">
-            {acceptedCount} of {totalDiffs} enhancements approved
+          <div>
+            <div className="az-eyebrow">AI Resume Analyzer</div>
+            <h1 className="az-title">{versionName || "Latest resume"}</h1>
+            {analyzedAt && (
+              <div className="az-subtitle">Last analyzed {analyzedAt.toLocaleString()}</div>
+            )}
           </div>
         </div>
-
-        <div className="analyzer-bar-actions">
-          <button
-            type="button"
-            className="btn-approve-all"
-            onClick={handleApproveAll}
-          >
-            <CheckCheck size={16} />
-            <span>Approve All</span>
+        <div className="az-header__right">
+          {savedResumes.length > 1 && (
+            <select
+              className="az-select"
+              value={resumeId || ""}
+              onChange={(e) => { setResumeId(e.target.value); setAnalysis(null); }}
+            >
+              {savedResumes.map((r) => (
+                <option key={r.id} value={r.id}>{r.versionName || r.id}</option>
+              ))}
+            </select>
+          )}
+          <button type="button" className="az-btn az-btn--primary" onClick={runAnalysis} disabled={running}>
+            <RefreshCw size={14} className={running ? "az-spin" : ""} />
+            {running ? "Analyzing…" : "Re-analyze"}
           </button>
-          <button
-            type="button"
-            className="btn-reject-all"
-            onClick={handleRejectAll}
-          >
-            <RotateCcw size={15} />
-            <span>Reset / Reject All</span>
-          </button>
-          <button
-            type="button"
-            className="btn-export-pdf"
-            onClick={handleExportDiffPDF}
-            disabled={isExporting}
-          >
-            <Download size={16} />
-            <span>{isExporting ? "Generating PDF..." : "Export Updated Resume (PDF)"}</span>
-          </button>
+          <Link to="/optimizer" className="az-btn az-btn--ghost">
+            <Wand2 size={14} /> Open Optimizer
+          </Link>
         </div>
-      </div>
+      </header>
 
-      {/* Main Half-Page Split: Left Document / Right Diff Cards */}
-      <div className="analyzer-split-grid">
-        {/* ==========================================================
-             LEFT HALF: DYNAMIC RESUME WITH VISUAL DIFF HIGHLIGHTS
-             ========================================================== */}
-        <div className="diff-document-pane">
-          <div className="diff-pane-legend">
-            <span className="legend-item"><span className="legend-dot green"></span> Recommended Addition</span>
-            <span className="legend-item"><span className="legend-dot blue"></span> Verb / Keyword Upgrade</span>
-            <span className="legend-item"><span className="legend-dot red"></span> Phrasing Replacement</span>
-          </div>
+      <section className="az-jd">
+        <label className="az-jd__label">
+          <Target size={14} /> Optional — paste a target job description for a sharper match score.
+        </label>
+        <textarea
+          className="az-jd__input"
+          rows={3}
+          placeholder="Paste the JD here. Leave blank to analyze the resume against general best practices."
+          value={jobText}
+          onChange={(e) => setJobText(e.target.value)}
+        />
+      </section>
 
-          <div className="document-sheet" ref={documentRef}>
-            {/* Header */}
-            <div className="doc-header">
-              <h1 className="doc-name">{resumeData.personal.fullName}</h1>
-              <div className="doc-sub">
-                {resumeData.personal.email} &bull; {resumeData.personal.phone} &bull; {resumeData.personal.location}
-              </div>
-              <div className="doc-sub">
-                {resumeData.personal.linkedin} &bull; {resumeData.personal.github}
-              </div>
-            </div>
+      {running && <Loader message="Analyzing your resume…" />}
 
-            {/* Summary with Diff */}
-            <div className="doc-sec">
-              <div className="doc-sec-title">PROFESSIONAL SUMMARY</div>
-              <p className="doc-text">
-                {resumeData.personal.summary}
-                {/* Diff 1 representation */}
-                {(() => {
-                  const diff = analysisResult.diffs.find((d) => d.id === "diff-1");
-                  if (!diff) return null;
-                  if (diff.status === "accepted") {
-                    return (
-                      <span className="diff-highlight addition accepted">
-                        {" "}Specialized in modern web architectures, Kubernetes, and scalable microservices.
-                      </span>
-                    );
-                  }
-                  if (diff.status === "pending") {
-                    return (
-                      <span className="diff-highlight addition pending">
-                        {" "}[+ Specialized in modern web architectures, Kubernetes, and scalable microservices]
-                      </span>
-                    );
-                  }
-                  return null;
-                })()}
-              </p>
-            </div>
 
-            {/* Experience with Diffs */}
-            <div className="doc-sec">
-              <div className="doc-sec-title">EXPERIENCE</div>
-              <div className="doc-entry">
-                <div className="doc-entry-header">
-                  <strong>Software Engineering Intern</strong> — TechNova Cloud Systems
-                  <span className="doc-date">Jun 2025 – Aug 2025</span>
+      {!running && analysis && (
+        <>
+          <section className="az-hero">
+            <div className={`az-score az-score--${scoreTone(score)}`}>
+              <div className="az-score__ring">
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                  <circle cx="60" cy="60" r="54" className="az-score__track" />
+                  <circle
+                    cx="60" cy="60" r="54"
+                    className="az-score__fill"
+                    style={{ strokeDasharray: `${(score / 100) * 339.3} 339.3` }}
+                  />
+                </svg>
+                <div className="az-score__num">
+                  <strong>{Math.round(score)}</strong><span>/100</span>
                 </div>
-                <ul className="doc-bullets">
-                  {/* Bullet 1 with Diff 2 */}
-                  <li>
-                    {(() => {
-                      const diff = analysisResult.diffs.find((d) => d.id === "diff-2");
-                      if (diff?.status === "accepted") {
-                        return (
-                          <span className="diff-highlight verb-upgrade accepted">
-                            Architected high-throughput RESTful services and gRPC endpoints in Node.js & Go, slashing p99 latency by 34% across 12M+ monthly queries.
-                          </span>
-                        );
-                      }
-                      if (diff?.status === "pending") {
-                        return (
-                          <>
-                            <span className="diff-strike">Engineered scalable REST APIs in Node.js and Go, reducing query latency by 34%.</span>{" "}
-                            <span className="diff-highlight verb-upgrade pending">
-                              [Architected high-throughput RESTful services and gRPC endpoints in Node.js & Go, slashing p99 latency by 34%]
-                            </span>
-                          </>
-                        );
-                      }
-                      return "Engineered scalable REST APIs in Node.js and Go, reducing query latency by 34%.";
-                    })()}
-                  </li>
+              </div>
+              <div className={`az-score__pill az-pill az-pill--${verdictCopy(verdict).tone}`}>
+                {verdictCopy(verdict).label}
+              </div>
+              <div className="az-score__caption">Resume Score</div>
+            </div>
 
-                  {/* Bullet 2 with Diff 3 */}
-                  <li>
-                    {(() => {
-                      const diff = analysisResult.diffs.find((d) => d.id === "diff-3");
-                      if (diff?.status === "accepted") {
-                        return (
-                          <span className="diff-highlight addition accepted">
-                            Automated zero-downtime deployment pipelines using Docker, GitHub Actions, and Kubernetes, reducing release cycles from 2 hours to 8 minutes.
-                          </span>
-                        );
-                      }
-                      if (diff?.status === "pending") {
-                        return (
-                          <>
-                            <span className="diff-strike">Containerized microservices using Docker and automated CI/CD pipelines via GitHub Actions.</span>{" "}
-                            <span className="diff-highlight addition pending">
-                              [+ Automated zero-downtime deployment pipelines using Docker, GitHub Actions, and Kubernetes]
-                            </span>
-                          </>
-                        );
-                      }
-                      return "Containerized microservices using Docker and automated CI/CD pipelines via GitHub Actions.";
-                    })()}
-                  </li>
+            <div className="az-hero__metrics">
+              {[
+                { k: "keywordMatch", label: "Keyword Match",       Icon: Crosshair     },
+                { k: "actionVerbs",  label: "Action Verbs",        Icon: TrendingUp    },
+                { k: "metrics",      label: "Measurable Outcomes", Icon: ListChecks    },
+                { k: "completeness", label: "Completeness",        Icon: CheckCircle2  },
+                { k: "summary",      label: "Summary",             Icon: Lightbulb     },
+              ].map(({ k, label, Icon }) => (
+                <div key={k} className="az-metric">
+                  <div className="az-metric__label"><Icon size={12} /> {label}</div>
+                  <div className="az-metric__bar">
+                    <div style={{ width: `${Math.round(breakdown[k] ?? 0)}%` }} />
+                  </div>
+                  <div className="az-metric__value">{Math.round(breakdown[k] ?? 0)}%</div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-                  <li>Collaborated with UI team to build accessible React dashboards serving 12,000+ daily active users.</li>
+          <nav className="az-tabs" role="tablist">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={tab === t.id}
+                className={`az-tab ${tab === t.id ? "is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+
+          {tab === "overview" && (
+            <section className="az-grid az-grid--2">
+              <article className="az-card az-card--good">
+                <h3 className="az-card__title"><CheckCircle2 size={16} /> Strengths</h3>
+                <ul className="az-list">
+                  {strengths.length === 0
+                    ? <li className="az-muted">No standout strengths yet — see Recommendations.</li>
+                    : strengths.map((s, i) => <li key={i}>{s}</li>)}
                 </ul>
-              </div>
-            </div>
+              </article>
+              <article className="az-card az-card--warn">
+                <h3 className="az-card__title"><AlertTriangle size={16} /> Issues to fix</h3>
+                <ul className="az-list">
+                  {weaknesses.length === 0
+                    ? <li className="az-muted">No major issues detected.</li>
+                    : weaknesses.map((w, i) => <li key={i}>{w}</li>)}
+                </ul>
+              </article>
+            </section>
+          )}
 
-            {/* Skills with Diff */}
-            <div className="doc-sec">
-              <div className="doc-sec-title">TECHNICAL SKILLS</div>
-              <p className="doc-text">
-                <strong>Languages & Frameworks: </strong>
-                {resumeData.skills.join(", ")}
-                {/* Diff 4 Representation */}
-                {(() => {
-                  const diff = analysisResult.diffs.find((d) => d.id === "diff-4");
-                  if (diff?.status === "accepted") {
-                    return (
-                      <span className="diff-highlight addition accepted">
-                        , Kubernetes, Redis, GraphQL
-                      </span>
-                    );
-                  }
-                  if (diff?.status === "pending") {
-                    return (
-                      <span className="diff-highlight addition pending">
-                        {" "}[+ Kubernetes, Redis, GraphQL]
-                      </span>
-                    );
-                  }
-                  return null;
-                })()}
+          {tab === "keywords" && (
+            <section className="az-card">
+              <h3 className="az-card__title">Keyword match</h3>
+              <p className="az-muted az-card__sub">
+                {matched.length} matched · {missing.length} missing
+                {jobText.trim() ? "" : " · add a JD above to refine these lists"}
               </p>
-            </div>
-          </div>
-        </div>
+              <div className="az-keyword-block">
+                <h4>Matched</h4>
+                {matched.length === 0
+                  ? <div className="az-muted">No matched keywords yet.</div>
+                  : <div className="az-chip-row">
+                      {matched.map((k) => <span key={k} className="az-chip az-chip--good">{k}</span>)}
+                    </div>}
+              </div>
+              <div className="az-keyword-block">
+                <h4>Missing</h4>
+                {missing.length === 0
+                  ? <div className="az-muted">No missing keywords detected.</div>
+                  : <div className="az-chip-row">
+                      {missing.map((k) => <span key={k} className="az-chip az-chip--bad">{k}</span>)}
+                    </div>}
+              </div>
+            </section>
+          )}
 
-        {/* ==========================================================
-             RIGHT HALF: INTERACTIVE SUGGESTIONS & PERMISSION CONTROLS
-             ========================================================== */}
-        <div className="diff-controls-pane">
-          <div className="controls-pane-header">
-            <h3 className="controls-title">AI Suggestions & Permission Approvals</h3>
-            <p className="controls-sub">
-              Accept individual edits to merge them into your resume document live.
-            </p>
-          </div>
+          {tab === "sections" && (
+            <section className="az-card">
+              <h3 className="az-card__title">Section analysis</h3>
+              <p className="az-muted az-card__sub">How each part of your resume is performing.</p>
+              <table className="az-section-table">
+                <thead>
+                  <tr><th>Section</th><th>Status</th><th>Detail</th></tr>
+                </thead>
+                <tbody>
+                  {sections.map((s) => (
+                    <tr key={s.name}>
+                      <td className="az-section-name">{s.name}</td>
+                      <td><span className={`az-pill az-pill--${s.tone}`}>{s.label}</span></td>
+                      <td className="az-muted">{s.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
 
-          <div className="diff-cards-list">
-            {analysisResult.diffs.map((diff, index) => {
-              const isAccepted = diff.status === "accepted";
-              const isRejected = diff.status === "rejected";
-              return (
-                <div
-                  key={diff.id}
-                  className={`diff-approval-card ${diff.status}`}
-                >
-                  <div className="card-top-row">
-                    <span className={`diff-type-badge ${diff.type}`}>
-                      {diff.type === "addition" && "+ ADDITION"}
-                      {diff.type === "verb_enhancement" && "VERB UPGRADE"}
-                      {diff.type === "deletion" && "CONDENSATION"}
-                    </span>
-                    <span className="diff-step-index">Change #{index + 1}</span>
+          {tab === "actions" && (
+            <section className="az-grid">
+              {priorities.length === 0 ? (
+                <article className="az-card"><div className="az-muted">No recommendations.</div></article>
+              ) : priorities.map((p) => (
+                <article key={p.id} className={`az-card az-reco az-reco--${p.tone}`}>
+                  <div className="az-reco__head">
+                    <span className={`az-pill az-pill--${p.tone}`}>{p.priority}</span>
+                    <span className="az-reco__section">{p.section}</span>
                   </div>
-
-                  <h4 className="diff-card-title">{diff.title}</h4>
-                  <p className="diff-explanation">{diff.explanation}</p>
-
-                  {/* Before / After comparison */}
-                  <div className="diff-comparison-box">
-                    <div className="diff-compare-item before">
-                      <span className="compare-label">CURRENT:</span>
-                      <p>{diff.originalText}</p>
-                    </div>
-                    <div className="diff-compare-item after">
-                      <span className="compare-label">PROPOSED ENHANCEMENT:</span>
-                      <p>{diff.recommendedText}</p>
-                    </div>
+                  <h4 className="az-reco__title">{p.title}</h4>
+                  <div className="az-reco__body">
+                    <div className="az-reco__row"><strong>Problem.</strong> <span>{p.problem}</span></div>
+                    <div className="az-reco__row"><strong>Why it matters.</strong> <span>{p.why}</span></div>
+                    <div className="az-reco__row"><strong>Suggested action.</strong> <span>{p.action}</span></div>
                   </div>
-
-                  {/* Accept / Reject Buttons */}
-                  <div className="diff-action-buttons">
-                    <button
-                      type="button"
-                      className={`btn-diff-reject ${isRejected ? "active" : ""}`}
-                      onClick={() => setDiffStatus(diff.id, "rejected")}
-                    >
-                      <X size={15} />
-                      <span>{isRejected ? "Rejected" : "Reject"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn-diff-accept ${isAccepted ? "active" : ""}`}
-                      onClick={() => setDiffStatus(diff.id, "accepted")}
-                    >
-                      <Check size={15} />
-                      <span>{isAccepted ? "Accepted" : "Accept Change"}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+                </article>
+              ))}
+            </section>
+          )}
+        </>
+      )}
     </div>
   );
 }
+
+// ---------- Derived helpers ----------
+
+
+function buildStrengths(breakdown = {}, diffs = []) {
+  const items = [];
+  if ((breakdown.keywordMatch ?? 0) >= 70) items.push("Strong keyword alignment with the target role.");
+  if ((breakdown.actionVerbs  ?? 0) >= 70) items.push("Bullets start with strong action verbs.");
+  if ((breakdown.metrics      ?? 0) >= 70) items.push("Most bullets include measurable outcomes.");
+  if ((breakdown.completeness ?? 0) >= 80) items.push("All standard sections are present.");
+  if ((breakdown.summary      ?? 0) >= 70) items.push("Professional summary is well-aligned with the role.");
+  if (diffs.length === 0) items.push("No rule-based gaps were detected.");
+  return items;
+}
+
+function buildWeaknesses(breakdown = {}, diffs = []) {
+  const items = [];
+  if ((breakdown.keywordMatch ?? 0) < 60) items.push("Low keyword overlap with the target job description.");
+  if ((breakdown.actionVerbs  ?? 0) < 60) items.push("Many bullets start with weak or passive verbs.");
+  if ((breakdown.metrics      ?? 0) < 60) items.push("Bullets lack measurable outcomes (%, $, scale, time).");
+  if ((breakdown.completeness ?? 0) < 70) items.push("Standard sections are incomplete.");
+  if ((breakdown.summary      ?? 0) < 60) items.push("Professional summary is missing or off-target.");
+  diffs.forEach((d) => items.push(`${d.title} — ${d.explanation}`));
+  return Array.from(new Set(items));
+}
+
+function buildSections(breakdown = {}, diffs = []) {
+  const tone = (v) => v >= 70 ? "good" : v >= 50 ? "fair" : "poor";
+  const labelFor = (t) => ({ good: "Good", fair: "Needs improvement", poor: "Missing / weak" }[t]);
+
+  return [
+    { name: "Personal information", tone: tone(breakdown.completeness ?? 0),
+      detail: "Contact details and identity." },
+    { name: "Professional summary", tone: tone(breakdown.summary ?? 0),
+      detail: "Value proposition aligned to the role." },
+    { name: "Experience", tone: tone(breakdown.actionVerbs ?? 0),
+      detail: "Action-verb-led bullets with measurable outcomes." },
+    { name: "Skills", tone: tone(breakdown.keywordMatch ?? 0),
+      detail: "Match against target role keywords." },
+    { name: "Education", tone: diffs.some((d) => d.section === "education") ? "poor" : "good",
+      detail: "Degree and institution records." },
+  ].map((s) => ({ ...s, label: labelFor(s.tone) }));
+}
+
+function buildPriorities(diffs = [], breakdown = {}) {
+  const p0 = diffs.filter((d) => (breakdown.keywordMatch ?? 0) < 50 || d.section === "education");
+  const p1 = diffs.filter((d) => d.section === "experience" && (breakdown.actionVerbs ?? 0) < 70);
+  const p2 = diffs.filter((d) => d.section === "skills" || d.section === "summary");
+
+  const items = [];
+  p0.forEach((d) => items.push({
+    id: d.id, priority: "P0 — Fix immediately", tone: "bad",
+    section: d.section || "general", title: d.title,
+    problem: d.explanation,
+    why: "Recruiters and ATS both penalise missing fundamentals.",
+    action: d.recommendedText ? `Add: ${d.recommendedText}` : "Open the builder and fill this section.",
+  }));
+  p1.forEach((d) => items.push({
+    id: d.id, priority: "P1 — Improve next", tone: "warn",
+    section: d.section || "general", title: d.title,
+    problem: d.explanation,
+    why: "Strong bullets dramatically raise screen-through rates.",
+    action: "Rewrite the bullet in the Builder with action verb + metric.",
+  }));
+  p2.forEach((d) => items.push({
+    id: d.id, priority: "P2 — Optional polish", tone: "fair",
+    section: d.section || "general", title: d.title,
+    problem: d.explanation,
+    why: "Higher-impact changes are above; revisit when iterating.",
+    action: "Consider tightening the wording or moving terms higher in the resume.",
+  }));
+  if (items.length === 0) {
+    items.push({
+      id: "ok", priority: "All clear", tone: "good", section: "—",
+      title: "No rule-based issues",
+      problem: "The analyzer did not detect rule-based gaps.",
+      why: "Score reflects a healthy baseline.",
+      action: "Open the Optimizer for AI-driven tailoring to a specific JD.",
+    });
+  }
+  return items;
+}
+
+

@@ -123,12 +123,24 @@
 
 /* ---------- Preview: toolbar + scrollable A4 stage ---------- */
 .fg-rb__preview {
-  width: 460px;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  width: clamp(360px, 38vw, 520px);
   display: flex;
   flex-direction: column;
   background: var(--color-paper);
   border-left: 1px solid var(--color-card-border);
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .fg-rb__preview { width: clamp(320px, 44vw, 460px); }
+}
+
+@media (max-width: 880px) {
+  /* Below ~880px we collapse the body to a column so the preview
+     sits beneath the editor instead of forcing horizontal scroll. */
+  .fg-rb__body { flex-direction: column; }
+  .fg-rb__preview { width: 100%; height: 60vh; border-left: 0; border-top: 1px solid var(--color-card-border); }
 }
 
 .fg-rb__preview-head {
@@ -231,6 +243,9 @@
   min-height: 0;
   overflow: auto;
   padding: 24px 16px;
+  /* Contain the scaled sheet inside the visible pane so the sheet
+     never pushes the preview into horizontal overflow. */
+  contain: layout paint;
 }
 
 .fg-rb__preview-scroll::-webkit-scrollbar {
