@@ -53,11 +53,12 @@ def __getattr__(name: str):
     if name == "JdAnalysisResult":
         from app.services.optimizer.schemas import JdAnalysisResult
         return JdAnalysisResult
-    if name in ("score_resume_against_jd", "MatchScore"):
-        from app.services.optimizer.scorer import (
-            score_resume_against_jd, MatchScore,
-        )
-        return score_resume_against_jd if name == "score_resume_against_jd" else MatchScore
+    if name == "score_resume_against_jd":
+        from app.services.optimizer.scorer import score_resume_against_jd
+        return score_resume_against_jd
+    if name == "MatchScore":
+        from app.services.optimizer.schemas import MatchScore
+        return MatchScore
     if name in ("tailor_resume", "TailoringResult"):
         from app.services.optimizer.tailor import tailor_resume, TailoringResult
         return tailor_resume if name == "tailor_resume" else TailoringResult
