@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Sparkles,
   Upload,
@@ -15,7 +16,9 @@ import {
 import html2pdf from "html2pdf.js";
 import { generateResumeDiffAnalysis } from "../services/aiEngine";
 
-export default function ResumeAnalyzerView({ onBackToDashboard }) {
+export default function ResumeAnalyzerView() {
+  const navigate = useNavigate();
+  const goHome = () => navigate("/dashboard");
   // Step: 'input' | 'diff'
   const [step, setStep] = useState("diff");
   const [jobDescription, setJobDescription] = useState(
@@ -135,7 +138,7 @@ export default function ResumeAnalyzerView({ onBackToDashboard }) {
           <button
             type="button"
             className="btn-back-nav"
-            onClick={onBackToDashboard}
+            onClick={goHome}
           >
             <ArrowLeft size={16} />
             <span>Dashboard</span>

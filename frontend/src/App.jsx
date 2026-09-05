@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Sidebar from "./components/Sidebar";
-import Header from "./components/Header";
 import DashboardView from "./components/DashboardView";
 import ResumeBuilderView from "./components/ResumeBuilderView";
 import ResumeAnalyzerView from "./components/ResumeAnalyzerView";
@@ -16,127 +15,88 @@ import Results from "./pages/Results";
 import "./App.css";
 import "./components/ResumeBuilder.css";
 
+// Map the current URL pathname to the active view id used by the switcher.
+// The URL is the single source of truth — Sidebar reads & writes it directly.
+function viewFromPathname(pathname) {
+  if (pathname.startsWith("/builder")) return "builder";
+  if (pathname.startsWith("/dashboard")) return "dashboard";
+  if (pathname.startsWith("/analyzer")) return "analyzer";
+  if (pathname.startsWith("/ats-scanner")) return "ats-checker";
+  if (pathname.startsWith("/optimizer")) return "optimizer";
+  if (pathname.startsWith("/coach")) return "coach";
+  if (pathname.startsWith("/history")) return "history";
+  return "dashboard";
+}
+
 // Unified Authenticated Workspace Layout
 function AuthenticatedWorkspace() {
   const { currentUser, logout } = useAuth();
   const location = useLocation();
-  const routeView = location.pathname.startsWith("/builder")
-    ? "builder"
-    : location.pathname.startsWith("/dashboard")
-      ? "dashboard"
-      : null;
-  const lastRouteRef = useRef(routeView);
-  const [activeView, setActiveView] = useState(routeView || "dashboard"); // 'dashboard' | 'builder' | 'analyzer' | 'ats-checker' | 'optimizer' | 'coach' | 'history'
   const [collapsed, setCollapsed] = useState(false);
 
-  // Sync the view only when the URL itself changes (deep links, back/forward,
-  // Link navigation). Sidebar/header clicks change state directly and must NOT
-  // be overridden by the URL-derived value, otherwise every click snaps back.
-  useEffect(() => {
-    if (routeView !== lastRouteRef.current) {
-      lastRouteRef.current = routeView;
-      setActiveView(routeView);
-    }
-  }, [routeView]);
-  const [builderOptions, setBuilderOptions] = useState({
-    resumeId: null,
-    creationPath: "form",
-    templateStyle: "classic"
-  });
+  // Derive activeView purely from the URL — no duplicate local state.
+  const activeView = useMemo(() => viewFromPathname(location.pathname), [location.pathname]);
 
-  const handleLaunchBuilder = (options = {}) => {
-    setBuilderOptions({
-      resumeId: options.resumeId || null,
-      creationPath: options.creationPath || "form",
-      templateStyle: options.templateStyle || "classic"
-    });
-    setActiveView("builder");
-  };
+  // Read ?template= and ?path= from the URL for /builder/new, so deep
+  // links like /builder/new?template=classic&path=form still initialize
+  // the builder correctly. Defaults match the previous hard-coded values.
+  const builderOptions = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const resumeId = location.pathname.match(/^\/builder\/([^/]+)/)?.[1] || null;
+    return {
+      resumeId: resumeId && resumeId !== "new" ? resumeId : null,
+      creationPath: params.get("path") || "form",
+      templateStyle: params.get("template") || "classic"
+    };
+  }, [location.pathname, location.search]);
 
   return (
     <div className={`unified-app-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
-      {/* 1. Left Collapsible Sidebar */}
+      {/* Left Collapsible Sidebar — URL-driven, no shared activeView state. */}
       <Sidebar
-        activeView={activeView}
-        setActiveView={setActiveView}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         currentUser={currentUser}
         onLogout={logout}
       />
 
-      {/* 2. Main Right Container */}
       <div className="unified-main-wrapper">
-        {/* Top Header with 3-line Hamburger Menu */}
-        <Header
-          activeView={activeView}
-          setActiveView={setActiveView}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-          currentUser={currentUser}
-          onLogout={logout}
-        />
-
-        {/* View Switcher Container */}
         <main className={`unified-view-content-area ${activeView === "builder" ? "content-area-full-bleed" : ""}`}>
           <ErrorBoundary>
             {activeView === "dashboard" && (
-            <DashboardView
-              currentUser={currentUser}
-              setActiveView={setActiveView}
-              onLaunchBuilder={handleLaunchBuilder}
-            />
-          )}
+              <DashboardView currentUser={currentUser} />
+            )}
 
-          {activeView === "builder" && (
-            <ResumeBuilderView
-              onBackToDashboard={() => setActiveView("dashboard")}
-              initialOptions={builderOptions}
-            />
-          )}
+            {activeView === "builder" && (
+              <ResumeBuilderView initialOptions={builderOptions} />
+            )}
 
-          {activeView === "analyzer" && (
-            <ResumeAnalyzerView
-              onBackToDashboard={() => setActiveView("dashboard")}
-            />
-          )}
+            {(activeView === "analyzer" ||
+              activeView === "ats-checker" ||
+              activeView === "optimizer") && (
+              <ResumeAnalyzerView />
+            )}
 
-          {activeView === "ats-checker" && (
-            <ResumeAnalyzerView
-              onBackToDashboard={() => setActiveView("dashboard")}
-            />
-          )}
-
-          {activeView === "optimizer" && (
-            <ResumeAnalyzerView
-              onBackToDashboard={() => setActiveView("dashboard")}
-            />
-          )}
-
-          {activeView === "coach" && (
-            <div className="coach-placeholder-panel">
-              <div className="coach-inner-box">
-                <div className="badge-pill">AI CAREER COACH & TOOLS</div>
-                <h2>Interactive STAR Interview Simulator & Behavioral Guidance</h2>
-                <p>
-                  Practice engineering behavioral questions, salary negotiation, and system design prompts with real-time feedback.
-                </p>
-                <button
-                  type="button"
-                  className="btn-primary-action"
-                  onClick={() => setActiveView("builder")}
-                >
-                  Return to Resume Builder
-                </button>
+            {activeView === "coach" && (
+              <div className="coach-placeholder-panel">
+                <div className="coach-inner-box">
+                  <div className="badge-pill">AI CAREER COACH & TOOLS</div>
+                  <h2>Interactive STAR Interview Simulator & Behavioral Guidance</h2>
+                  <p>
+                    Practice engineering behavioral questions, salary negotiation, and system design prompts with real-time feedback.
+                  </p>
+                  <p className="coach-placeholder-note">
+                    AI Coach will be available in a later release.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeView === "history" && (
-            <div className="history-embedded-container">
-              <History />
-            </div>
-          )}
+            {activeView === "history" && (
+              <div className="history-embedded-container">
+                <History />
+              </div>
+            )}
           </ErrorBoundary>
         </main>
       </div>
@@ -156,7 +116,7 @@ export default function App() {
         <Route path="/results/:id" element={<Results />} />
         <Route path="/history" element={<History />} />
 
-        {/* Protected Unified Dashboard Workspace */}
+        {/* Protected Unified Workspace — URL is the source of truth for the active view. */}
         <Route
           path="/dashboard"
           element={
@@ -175,6 +135,38 @@ export default function App() {
         />
         <Route
           path="/builder/:id"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analyzer"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ats-scanner"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/optimizer"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach"
           element={
             <ProtectedRoute>
               <AuthenticatedWorkspace />

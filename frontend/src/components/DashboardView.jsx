@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Sparkles,
@@ -18,11 +19,8 @@ import {
 import { resumeApi } from "../api/api";
 import { getSavedResumes, deleteResumeDraft, saveResumeDraft } from "../services/aiEngine";
 
-export default function DashboardView({
-  currentUser,
-  setActiveView,
-  onLaunchBuilder
-}) {
+export default function DashboardView({ currentUser }) {
+  const navigate = useNavigate();
   const [savedResumes, setSavedResumes] = useState([]);
   const [backendLive, setBackendLive] = useState(null);
   const [resumeSearch, setResumeSearch] = useState("");
@@ -43,24 +41,20 @@ export default function DashboardView({
     setTimeout(() => setActionNotice(""), 3000);
   };
 
+  const buildSearch = (path, template) => {
+    const params = new URLSearchParams();
+    if (path) params.set("path", path);
+    if (template && template !== "classic") params.set("template", template);
+    const qs = params.toString();
+    return qs ? `/builder/new?${qs}` : "/builder/new";
+  };
+
   const handleCreateNew = (pathway = "form", templateStyle = "classic") => {
-    if (onLaunchBuilder) {
-      onLaunchBuilder({ creationPath: pathway, templateStyle });
-    } else {
-      setActiveView("builder");
-    }
+    navigate(buildSearch(pathway, templateStyle));
   };
 
   const handleEditResume = (resume) => {
-    if (onLaunchBuilder) {
-      onLaunchBuilder({
-        resumeId: resume.id,
-        creationPath: "form",
-        templateStyle: resume.templateStyle || "classic"
-      });
-    } else {
-      setActiveView("builder");
-    }
+    navigate(`/builder/${resume.id}`);
   };
 
   const handleDuplicateResume = (resume) => {
@@ -197,7 +191,7 @@ export default function DashboardView({
             <ArrowRight size={16} className="pro-tool-arrow" />
           </button>
 
-          <button type="button" className="pro-tool-card" onClick={() => setActiveView("analyzer")}>
+          <button type="button" className="pro-tool-card" onClick={() => navigate("/analyzer")}>
             <div className="pro-tool-icon emerald"><Sparkles size={20} /></div>
             <div className="pro-tool-body">
               <span className="pro-tool-title">AI Resume Analyzer</span>
@@ -206,7 +200,7 @@ export default function DashboardView({
             <ArrowRight size={16} className="pro-tool-arrow" />
           </button>
 
-          <button type="button" className="pro-tool-card" onClick={() => setActiveView("ats-checker")}>
+          <button type="button" className="pro-tool-card" onClick={() => navigate("/ats-scanner")}>
             <div className="pro-tool-icon indigo"><CheckCircle2 size={20} /></div>
             <div className="pro-tool-body">
               <span className="pro-tool-title">ATS Scanner</span>
@@ -215,7 +209,7 @@ export default function DashboardView({
             <ArrowRight size={16} className="pro-tool-arrow" />
           </button>
 
-          <button type="button" className="pro-tool-card" onClick={() => setActiveView("optimizer")}>
+          <button type="button" className="pro-tool-card" onClick={() => navigate("/optimizer")}>
             <div className="pro-tool-icon violet"><Wand2 size={20} /></div>
             <div className="pro-tool-body">
               <span className="pro-tool-title">AI Resume Optimizer</span>
