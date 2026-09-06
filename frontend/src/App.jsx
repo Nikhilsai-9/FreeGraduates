@@ -11,6 +11,8 @@ import AtsScannerView from "./components/AtsScannerView";
 import OptimizerView from "./components/OptimizerView";
 import CoachView from "./components/CoachView";
 import CoverLetterView from "./components/CoverLetterView";
+import ProfileView from "./components/ProfileView";
+import SettingsView from "./components/SettingsView";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -19,6 +21,8 @@ import Results from "./pages/Results";
 import Onboarding from "./pages/Onboarding";
 import "./App.css";
 import "./components/ResumeBuilder.css";
+import "./components/ProfileView.css";
+import "./components/SettingsView.css";
 
 // Map the current URL pathname to the active view id used by the switcher.
 // The URL is the single source of truth â€” Sidebar reads & writes it directly.
@@ -31,6 +35,8 @@ function viewFromPathname(pathname) {
   if (pathname.startsWith("/coach")) return "coach";
   if (pathname.startsWith("/cover-letter")) return "cover-letter";
   if (pathname.startsWith("/history")) return "history";
+  if (pathname.startsWith("/profile")) return "profile";
+  if (pathname.startsWith("/settings")) return "settings";
   return "dashboard";
 }
 
@@ -95,6 +101,10 @@ function AuthenticatedWorkspace() {
                 <History />
               </div>
             )}
+
+            {activeView === "profile" && <ProfileView />}
+
+            {activeView === "settings" && <SettingsView />}
           </ErrorBoundary>
         </main>
       </div>
@@ -184,6 +194,22 @@ export default function App() {
         />
         <Route
           path="/cover-letter"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <AuthenticatedWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
           element={
             <ProtectedRoute>
               <AuthenticatedWorkspace />

@@ -12,7 +12,9 @@ import {
   ChevronLeft,
   ChevronRight,
   LifeBuoy,
-  Mail
+  Mail,
+  User,
+  Settings as SettingsIcon
 } from "lucide-react";
 import Logo from "./Logo";
 
@@ -36,6 +38,13 @@ const NAV_GROUPS = [
       { id: "cover-letter", path: "/cover-letter", label: "Cover Letters", icon: Mail },
       { id: "coach", path: "/coach", label: "AI Coach & Tools", icon: Bot, badge: "Beta" },
       { id: "history", path: "/history", label: "Audit History", icon: History }
+    ]
+  },
+  {
+    label: "Account",
+    items: [
+      { id: "profile", path: "/profile", label: "Profile", icon: User },
+      { id: "settings", path: "/settings", label: "Settings", icon: SettingsIcon }
     ]
   }
 ];
