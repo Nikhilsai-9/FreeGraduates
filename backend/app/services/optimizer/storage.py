@@ -1,4 +1,4 @@
-﻿"""Thread-safe JSON storage for Optimizer records.
+"""Thread-safe JSON storage for Optimizer records.
 
 Mirror of the per-user pattern in `app/services/profile.py`. Each
 optimization is one file under `data/optimizer/<uid>/<optimization_id>.json`.
@@ -110,12 +110,43 @@ class OptimizerStorage:
         return self._read(self._file(uid, optimization_id))
 
     def update(self, uid: str, optimization_id: str, **changes: Any) -> Optional[dict]:
+        """Set/update fields. None-valued kwargs are ignored (fields keep their previous value)."""
+        return self._update(uid, optimization_id, clear=None, **changes)
+
+    def update_with_clear(
+        self,
+        uid: str,
+        optimization_id: str,
+        *,
+        clear,
+        **changes,
+    ) -> Optional[dict]:
+        """Like ``update`` but explicitly sets each field listed in ``clear`` to ``None``.
+
+        Used by the approval workflow to drop preview fields when the user
+        rejects them or commits them into the applied slot.
+        """
+        return self._update(uid, optimization_id, clear=clear, **changes)
+
+    def _update(
+        self,
+        uid: str,
+        optimization_id: str,
+        *,
+        clear,
+        **changes,
+    ) -> Optional[dict]:
         with self._lock:
             path = self._file(uid, optimization_id)
             existing = self._read(path)
             if not existing:
                 return None
-            existing.update({k: v for k, v in changes.items() if v is not None})
+            if clear:
+                for field in clear:
+                    existing[field] = None
+            for k, v in changes.items():
+                if v is not None:
+                    existing[k] = v
             existing["updatedAt"] = _now_iso()
             self._write(path, existing)
             return existing

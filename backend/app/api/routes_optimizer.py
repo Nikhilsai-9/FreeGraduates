@@ -1,4 +1,4 @@
-﻿"""HTTP routes for the Resume Optimizer.
+"""HTTP routes for the Resume Optimizer.
 
 The Optimizer is a parallel workflow to the Builder:
 
@@ -49,6 +49,39 @@ def _load_or_404(storage: OptimizerStorage, uid: str, optimization_id: str) -> d
             detail="Optimization not found.",
         )
     return rec
+
+
+def _present(rec: dict) -> dict:
+    """Return a UI-friendly view of an optimization record.
+
+    The storage layer keeps two candidate slots:
+
+    * ``tailoredResume`` / ``changesApplied`` / ``generatedBy`` -- committed
+      (user-approved) tailored candidate.
+    * ``tailoredPreview`` / ``previewChangesApplied`` / ``previewGeneratedBy`` --
+      pending review; promoted to the committed slot only after the user
+      clicks **Apply Changes**.
+
+    The frontend historically reads ``tailoredResume`` /
+    ``changesApplied`` / ``generatedBy``. To preserve that contract without
+    forcing the UI to know about the storage split, this helper exposes
+    whichever candidate is currently "in front of the user" under those
+    field names and adds a ``pendingApproval`` boolean the UI uses to
+    decide whether to render the **Apply** / **Reject** buttons.
+
+    Backward compatible with records written by older code that only had
+    ``tailoredResume`` / ``status="tailored"``.
+    """
+    view = dict(rec)
+    pending = bool(view.get("tailoredPreview"))
+    if pending:
+        view["tailoredResume"] = view.get("tailoredPreview")
+        view["changesApplied"] = view.get("previewChangesApplied") or []
+        view["generatedBy"] = view.get("previewGeneratedBy") or "rules"
+        view["pendingApproval"] = True
+    else:
+        view["pendingApproval"] = False
+    return view
 
 
 # ---------- Routes ----------
@@ -113,7 +146,7 @@ async def get_optimization(
     user: AuthUser = Depends(get_current_user),
     storage: OptimizerStorage = Depends(_storage_dep),
 ):
-    return _load_or_404(storage, user.uid, optimization_id)
+    return _present(_load_or_404(storage, user.uid, optimization_id))
 
 
 @router.delete("/{optimization_id}")
@@ -165,10 +198,16 @@ async def tailor_optimization(
     user: AuthUser = Depends(get_current_user),
     storage: OptimizerStorage = Depends(_storage_dep),
 ):
-    """Produce a tailored version of the resume against the stored JD.
+    """Produce a tailored *preview* of the resume against the stored JD.
 
-    Returns the full updated optimization record including
-    `tailoredResume` and `changesApplied`.
+    The preview is stored under ``tailoredPreview`` and the record status
+    flips to ``"previewed"``. The committed ``tailoredResume`` slot -- and
+    therefore the user's saved resume -- is **not** touched here. Only
+    ``POST /{id}/apply`` promotes the preview into the committed slot.
+
+    Returns the full record in the standard view shape (see ``_present``),
+    so the UI keeps reading ``tailoredResume`` / ``changesApplied`` /
+    ``generatedBy`` and additionally gets a ``pendingApproval=True`` flag.
     """
     rec = _load_or_404(storage, user.uid, optimization_id)
     jd_text = rec.get("jobDescription") or ""
@@ -182,20 +221,91 @@ async def tailor_optimization(
     }
 
     tailoring = tailor_resume(rec.get("sourceResume") or {}, jd_payload)
-    # Persist changesApplied and generatedBy so subsequent GET /{id} reads
-    # carry the same shape as this POST response. Otherwise the UI shows
-    # the tailored candidate but loses the change list whenever it
-    # re-fetches the record after Tailor.
     updated = storage.update(
         user.uid,
         optimization_id,
-        tailoredResume=tailoring.get("tailoredCandidate"),
-        changesApplied=tailoring.get("changesApplied", []),
-        generatedBy=tailoring.get("generatedBy", "rules"),
+        tailoredPreview=tailoring.get("tailoredCandidate"),
+        previewChangesApplied=tailoring.get("changesApplied", []),
+        previewGeneratedBy=tailoring.get("generatedBy", "rules"),
+        status="previewed",
+        error=None,
+    )
+    return _present(updated)
+
+
+@router.post("/{optimization_id}/apply")
+async def apply_optimization(
+    optimization_id: str,
+    user: AuthUser = Depends(get_current_user),
+    storage: OptimizerStorage = Depends(_storage_dep),
+):
+    """Promote a pending preview into the committed tailored slot.
+
+    Moves:
+        tailoredPreview       -> tailoredResume
+        previewChangesApplied -> changesApplied
+        previewGeneratedBy    -> generatedBy
+        status: "previewed"   -> "tailored"
+
+    Then clears the preview fields. The user's original saved resume
+    (``sourceResume``) is never modified.
+
+    Idempotent: if there is no pending preview, returns the current
+    record unchanged with an ``applied=True`` flag so the UI can no-op.
+    """
+    rec = _load_or_404(storage, user.uid, optimization_id)
+    if not rec.get("tailoredPreview"):
+        view = _present(rec)
+        view["applied"] = True
+        return view
+    updated = storage.update_with_clear(
+        user.uid,
+        optimization_id,
+        clear=[
+            "tailoredPreview",
+            "previewChangesApplied",
+            "previewGeneratedBy",
+        ],
+        tailoredResume=rec.get("tailoredPreview"),
+        changesApplied=rec.get("previewChangesApplied") or [],
+        generatedBy=rec.get("previewGeneratedBy") or "rules",
         status="tailored",
         error=None,
     )
-    return updated
+    view = _present(updated)
+    view["applied"] = True
+    return view
+
+
+@router.post("/{optimization_id}/reject")
+async def reject_optimization(
+    optimization_id: str,
+    user: AuthUser = Depends(get_current_user),
+    storage: OptimizerStorage = Depends(_storage_dep),
+):
+    """Discard a pending preview without touching the user's saved resume.
+
+    Clears the preview slot and rolls status back to ``"analyzed"`` (if
+    we have a match score) or ``"draft"`` otherwise. ``sourceResume``,
+    ``tailoredResume`` (already applied) and any previous committed
+    candidate are preserved untouched.
+    """
+    rec = _load_or_404(storage, user.uid, optimization_id)
+    new_status = "analyzed" if rec.get("matchScore") else "draft"
+    updated = storage.update_with_clear(
+        user.uid,
+        optimization_id,
+        clear=[
+            "tailoredPreview",
+            "previewChangesApplied",
+            "previewGeneratedBy",
+        ],
+        status=new_status,
+        error=None,
+    )
+    view = _present(updated)
+    view["rejected"] = True
+    return view
 
 
 @router.put("/{optimization_id}")

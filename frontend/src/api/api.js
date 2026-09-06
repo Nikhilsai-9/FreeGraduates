@@ -273,6 +273,14 @@ export const optimizerApi = {
     const response = await api.post(`/api/resume-optimizer/${id}/tailor`, {});
     return response.data;
   },
+  apply: async (id) => {
+    const response = await api.post(`/api/resume-optimizer/${id}/apply`, {});
+    return response.data;
+  },
+  reject: async (id) => {
+    const response = await api.post(`/api/resume-optimizer/${id}/reject`, {});
+    return response.data;
+  },
   remove: async (id) => {
     const response = await api.delete(`/api/resume-optimizer/${id}`);
     return response.data;
