@@ -146,7 +146,7 @@ const OptimizerView = () => {
     } finally {
       setTailoring(false);
     }
-
+  }
 
   async function handleApply() {
     if (!active) return;
@@ -197,7 +197,6 @@ const OptimizerView = () => {
     } finally {
       setRejecting(false);
     }
-  }
   }
 
   async function handleDelete(id) {
