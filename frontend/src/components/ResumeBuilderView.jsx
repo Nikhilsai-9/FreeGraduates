@@ -9,7 +9,7 @@ import { resumeApi, ExtractError } from "../api/api";
 import {
   FileText, Upload, PenTool, Layout, ChevronRight, ChevronLeft,
   Check, X, AlertCircle, RefreshCw, Download, Save, Eye, ZoomIn, ZoomOut,
-  History
+  History, Briefcase
 } from "lucide-react";
 
 // ---------- Candidate shape (matches backend) ----------
@@ -87,6 +87,27 @@ export default function ResumeBuilderView({ initialOptions }) {
   const [warnings, setWarnings] = useState([]);
   const [toast, setToast] = useState(null);
   const [savedIds, setSavedIds] = useState([]);
+
+  // Original uploaded PDF — preserved as a data URL so the user
+  // can always see what they uploaded (and compare against the
+  // editable FreeGraduates preview). Never persisted to the
+  // backend; cleared when the user resets the upload.
+  const [originalPdf, setOriginalPdf] = useState(null);
+  const [originalFileName, setOriginalFileName] = useState("");
+
+  // Preview panel mode:
+  //   'editable' — the generated FreeGraduates resume preview
+  //   'original' — the user's uploaded PDF rendered as an iframe
+  // Auto-switch back to 'editable' on the start / form steps.
+  const [previewMode, setPreviewMode] = useState("editable");
+
+  // LinkedIn / pasted-text import state.
+  const [linkedinOpen, setLinkedinOpen] = useState(false);
+  const [linkedinText, setLinkedinText] = useState("");
+  const [linkedinBusy, setLinkedinBusy] = useState(false);
+
+  // Mobile EDIT <-> PREVIEW toggle (applied via body class).
+  const [mobileShowPreview, setMobileShowPreview] = useState(false);
 
   // Preview zoom: "fit" fits the A4 sheet to the preview viewport, or an explicit scale.
   const [zoom, setZoom] = useState("fit");
@@ -212,6 +233,24 @@ export default function ResumeBuilderView({ initialOptions }) {
       return;
     }
 
+    // Preserve the original PDF as a data URL so the user can
+    // always view their uploaded document during the editing session
+    // (per the "original uploaded resume must remain visible" rule).
+    // Wrapped in try/catch because FileReader can throw on rare
+    // permission / memory errors.
+    let pdfDataUrl = null;
+    try {
+      pdfDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error("read-failed"));
+        reader.readAsDataURL(file);
+      });
+    } catch (e) {
+      // Non-fatal — the original preview will simply be unavailable.
+      pdfDataUrl = null;
+    }
+
     setExtractError(null);
     setUploadPhase("uploading");
     setUploadProgress(0);
@@ -229,6 +268,9 @@ export default function ResumeBuilderView({ initialOptions }) {
 
       if (res?.parsed) {
         setCandidate(mergeCandidate(newCandidate(), res.parsed));
+        setOriginalPdf(pdfDataUrl);
+        setOriginalFileName(file.name || "uploaded-resume.pdf");
+        setPreviewMode("editable"); // show the new editable preview, not the PDF
         setUploadPhase("success");
         setExtractError(null);
         setTimeout(() => {
@@ -262,7 +304,45 @@ export default function ResumeBuilderView({ initialOptions }) {
     setUploadPhase("idle");
     setExtractError(null);
     setUploadProgress(0);
+    setOriginalPdf(null);
+    setOriginalFileName("");
+    setPreviewMode("editable");
     if (fileInput.current) fileInput.current.value = "";
+  };
+
+  // ---------- LinkedIn / pasted-text import ----------
+  // We deliberately do NOT scrape LinkedIn. The user provides the
+  // content themselves (a copied "About" section, a downloaded
+  // LinkedIn PDF, or pasted profile data) and FreeGraduates parses
+  // it the same way as a PDF extract.
+  const handleLinkedinImport = async () => {
+    if (!linkedinText.trim()) {
+      showToast("Paste your LinkedIn information first.", "error");
+      return;
+    }
+    setLinkedinBusy(true);
+    try {
+      // Build a tiny in-memory .txt blob and route it through the
+      // existing /api/resume/extract pipeline so the parser is the
+      // single source of truth for extraction logic.
+      const blob = new Blob([linkedinText], { type: "text/plain" });
+      const fakeFile = new File([blob], "linkedin-profile.txt", { type: "text/plain" });
+      const res = await resumeApi.extract(fakeFile, () => {});
+      if (res?.parsed) {
+        setCandidate(mergeCandidate(newCandidate(), res.parsed));
+        setCreationPath("upload");
+        setLinkedinOpen(false);
+        setLinkedinText("");
+        showToast("Profile imported. Review the extracted fields below.", "success");
+        setStep("personal");
+      } else {
+        showToast("We couldn't extract structured fields from that text. Please refine or try the PDF path.", "error");
+      }
+    } catch (err) {
+      showToast("Import failed: " + (err?.message || "unknown error"), "error");
+    } finally {
+      setLinkedinBusy(false);
+    }
   };
 
   // ---------- Generate ----------
@@ -361,7 +441,7 @@ export default function ResumeBuilderView({ initialOptions }) {
         </div>
       )}
 
-      <div className="fg-rb__body">
+      <div className={`fg-rb__body ${mobileShowPreview ? "is-mobile-preview" : ""}`}>
         {/* Left: Step rail */}
         {!isOnStart && (
           <nav className="fg-rb__rail" aria-label="Builder steps">
@@ -460,28 +540,48 @@ export default function ResumeBuilderView({ initialOptions }) {
         {!isOnStart && (
           <aside className="fg-rb__preview">
             <div className="fg-rb__preview-head">
-              <span className="fg-rb__preview-title">
-                <Eye size={14} />
-                Live Preview
-              </span>
+              <div className="fg-rb__preview-tabs" role="tablist" aria-label="Preview source">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={previewMode === "editable"}
+                  className={`fg-rb__preview-tab ${previewMode === "editable" ? "is-active" : ""}`}
+                  onClick={() => setPreviewMode("editable")}
+                >
+                  <Eye size={13} /> Editable
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={previewMode === "original"}
+                  className={`fg-rb__preview-tab ${previewMode === "original" ? "is-active" : ""}`}
+                  onClick={() => setPreviewMode("original")}
+                  disabled={!originalPdf}
+                  title={originalPdf ? `View ${originalFileName}` : "Upload a PDF to enable original preview"}
+                >
+                  <FileText size={13} /> Original
+                </button>
+              </div>
               <div className="fg-rb__preview-actions">
                 {savedId && (
                   <span className="fg-rb__saved-pill"><Check size={12} /> Saved</span>
                 )}
-                <div className="fg-rb__zoom" role="group" aria-label="Preview zoom">
-                  <button type="button" className="fg-zoom-btn" onClick={() => changeZoom(-ZOOM_STEP)}
-                    disabled={zoomCanOut} aria-label="Zoom out" title="Zoom out">
-                    <ZoomOut size={14} />
-                  </button>
-                  <button type="button" className="fg-zoom-value" onClick={resetZoom}
-                    title="Reset to fit preview">
-                    {isZoomNumber ? `${Math.round(zoom * 100)}%` : "Fit"}
-                  </button>
-                  <button type="button" className="fg-zoom-btn" onClick={() => changeZoom(ZOOM_STEP)}
-                    disabled={zoomCanIn} aria-label="Zoom in" title="Zoom in">
-                    <ZoomIn size={14} />
-                  </button>
-                </div>
+                {previewMode === "editable" && (
+                  <div className="fg-rb__zoom" role="group" aria-label="Preview zoom">
+                    <button type="button" className="fg-zoom-btn" onClick={() => changeZoom(-ZOOM_STEP)}
+                      disabled={zoomCanOut} aria-label="Zoom out" title="Zoom out">
+                      <ZoomOut size={14} />
+                    </button>
+                    <button type="button" className="fg-zoom-value" onClick={resetZoom}
+                      title="Reset to fit preview">
+                      {isZoomNumber ? `${Math.round(zoom * 100)}%` : "Fit"}
+                    </button>
+                    <button type="button" className="fg-zoom-btn" onClick={() => changeZoom(ZOOM_STEP)}
+                      disabled={zoomCanIn} aria-label="Zoom in" title="Zoom in">
+                      <ZoomIn size={14} />
+                    </button>
+                  </div>
+                )}
                 <button type="button" className="fg-btn fg-btn--primary fg-btn--sm"
                   onClick={handleSave} disabled={!candidate.personal_info.fullName}>
                   <Save size={14} />
@@ -491,12 +591,50 @@ export default function ResumeBuilderView({ initialOptions }) {
             </div>
             <div className="fg-rb__preview-scroll">
               <div className="fg-rb__preview-stage">
-                <LivePreview candidate={candidate} job={job} templateId={templateId}
-                  generated={generated} zoom={zoom} />
+                {previewMode === "editable" && (
+                  <LivePreview candidate={candidate} job={job} templateId={templateId}
+                    generated={generated} zoom={zoom} />
+                )}
+                {previewMode === "original" && originalPdf && (
+                  <div className="fg-rb__original-pdf">
+                    <div className="fg-rb__original-meta">
+                      <FileText size={13} />
+                      <span>{originalFileName || "uploaded-resume.pdf"}</span>
+                      <a href={originalPdf} download={originalFileName || "resume.pdf"}
+                        className="fg-rb__original-download">Download original</a>
+                    </div>
+                    <iframe
+                      title="Original uploaded resume"
+                      src={originalPdf}
+                      className="fg-rb__original-frame"
+                    />
+                  </div>
+                )}
+                {previewMode === "original" && !originalPdf && (
+                  <div className="fg-rb__original-empty">
+                    <FileText size={28} />
+                    <p>Upload a PDF to see your original document here for reference.</p>
+                  </div>
+                )}
               </div>
             </div>
           </aside>
         )}
+
+        {/* Mobile toggle row (visible <640px via CSS). Keeps the user
+            oriented when only EDIT or PREVIEW is shown at a time. */}
+        <div className="fg-rb__mobile-toggle" role="group" aria-label="Mobile panel switch">
+          <button
+            type="button"
+            className={`fg-rb__mobile-btn ${!mobileShowPreview ? "is-active" : ""}`}
+            onClick={() => setMobileShowPreview(false)}
+          >Edit</button>
+          <button
+            type="button"
+            className={`fg-rb__mobile-btn ${mobileShowPreview ? "is-active" : ""}`}
+            onClick={() => setMobileShowPreview(true)}
+          >Preview</button>
+        </div>
       </div>
     </div>
   );
@@ -588,6 +726,40 @@ function StartStep({
               <button className="fg-btn fg-btn--ghost fg-btn--sm" onClick={onResetUpload}>
                 <RefreshCw size={12} /> Retry
               </button>
+            </div>
+          )}
+        </div>
+
+        {/* Build from LinkedIn / Profile Data */}
+        <div className={`fg-start-card ${creationPath === "linkedin" ? "is-active" : ""}`}>
+          <div className="fg-start-card__icon-wrap fg-start-card__icon-wrap--iris">
+            <Briefcase size={22} />
+          </div>
+          <div className="fg-start-card__content">
+            <h4>Build from LinkedIn / PDF</h4>
+            <p>Paste profile information or upload a LinkedIn PDF. We extract and structure it for you — no scraping, no logins.</p>
+          </div>
+          <button className="fg-btn fg-btn--ghost fg-btn--block"
+            onClick={() => setLinkedinOpen(!linkedinOpen)}>
+            {linkedinOpen ? "Hide paste area" : "Add LinkedIn info"}
+          </button>
+          {linkedinOpen && (
+            <div className="fg-start-card__subform">
+              <textarea
+                className="fg-input fg-input--textarea"
+                rows={6}
+                placeholder="Paste your LinkedIn 'About' section, experience, education, etc. — or upload a LinkedIn PDF above."
+                value={linkedinText}
+                onChange={(e) => setLinkedinText(e.target.value)}
+              />
+              <button className="fg-btn fg-btn--primary fg-btn--block"
+                disabled={linkedinBusy || !linkedinText.trim()}
+                onClick={handleLinkedinImport}>
+                {linkedinBusy ? "Extracting…" : "Extract from text"}
+              </button>
+              <p className="fg-start-card__hint">
+                We never connect to LinkedIn directly. You control what you share.
+              </p>
             </div>
           )}
         </div>

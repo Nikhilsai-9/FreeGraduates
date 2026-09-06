@@ -14,11 +14,20 @@
   color: var(--color-ink-primary);
 }
 
-/* ---------- Body: rail | editor | preview ---------- */
+/* ---------- Body: rail | editor | preview ----------
+   Grid layout so the preview panel automatically wins the room
+   it needs to show an A4 sheet at a readable size at 100% browser
+   zoom. The right column (preview) gets minmax(420px, 1.2fr) so it
+   never collapses below a usable size. The editor takes the rest.
+   On viewports below 1024px the rail becomes a top strip and the
+   preview becomes a bottom panel (handled further down). */
 .fg-rb__body {
-  display: flex;
   flex: 1;
   min-height: 0;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) minmax(420px, 1.15fr);
+  gap: 0;
+  overflow: hidden;
 }
 
 /* ---------- Step rail ---------- */
@@ -121,15 +130,142 @@
   border-radius: var(--radius-pill);
 }
 
-/* ---------- Preview: toolbar + scrollable A4 stage ---------- */
+/* ---------- Preview: toolbar + scrollable A4 stage ----------
+   Width is now controlled by the parent grid (see .fg-rb__body).
+   The panel uses its full grid track and the internal sheet scales
+   to fit via transform — never causing horizontal page overflow. */
 .fg-rb__preview {
-  flex: 0 0 auto;
-  width: clamp(360px, 38vw, 520px);
   display: flex;
   flex-direction: column;
   background: var(--color-paper);
   border-left: 1px solid var(--color-card-border);
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Tabs above the preview that switch between the generated editable
+   preview and the user's original uploaded PDF. */
+.fg-rb__preview-tabs {
+  display: inline-flex;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+.fg-rb__preview-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--color-ink-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  font-family: inherit;
+}
+.fg-rb__preview-tab:hover:not(:disabled) {
+  color: var(--color-ink-primary);
+}
+.fg-rb__preview-tab.is-active {
+  background: var(--color-paper);
+  color: var(--color-signal-blue);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.fg-rb__preview-tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Original PDF container — full height of the preview scroll,
+   with a sticky header showing the file name + download link. */
+.fg-rb__original-pdf {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  background: var(--color-canvas);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-card-border);
+}
+.fg-rb__original-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--color-paper);
+  border-bottom: 1px solid var(--color-card-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-secondary);
+}
+.fg-rb__original-meta span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fg-rb__original-download {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-signal-blue);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-card-border);
+  flex-shrink: 0;
+}
+.fg-rb__original-download:hover {
+  background: var(--color-signal-blue-light);
+}
+.fg-rb__original-frame {
+  width: 100%;
+  flex: 1;
+  border: 0;
+  background: #525659;
+}
+.fg-rb__original-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 24px;
+  color: var(--color-ink-tertiary);
+  text-align: center;
+}
+.fg-rb__original-empty p {
+  margin: 0;
+  font-size: 13px;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+/* Mobile-only EDIT / PREVIEW toggle (CSS hides it >= 640px). */
+.fg-rb__mobile-toggle {
+  display: none;
+}
+
+/* LinkedIn / pasted-text subform on the start step card. */
+.fg-start-card__subform {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+}
+.fg-start-card__hint {
+  font-size: 11.5px;
+  color: var(--color-ink-tertiary);
+  margin: 0;
+  line-height: 1.4;
 }
 
 @media (max-width: 1100px) {
@@ -144,15 +280,16 @@
 }
 
 .fg-rb__preview-head {
-  height: 56px;
+  min-height: 56px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 14px;
+  padding: 10px 14px;
   background: var(--color-paper);
   border-bottom: 1px solid var(--color-card-border);
+  flex-wrap: wrap;
 }
 
 .fg-rb__preview-title {
@@ -866,24 +1003,35 @@
 }
 
 
-/* ---------- Responsive ---------- */
-@media (max-width: 1280px) {
-  .fg-rb__preview { width: 400px; }
-}
+/* ---------- Responsive ----------
+   Three breakpoints used here:
 
-@media (max-width: 1100px) {
-  .fg-rb__preview { width: 340px; }
-  .fg-rb__rail { width: 180px; padding: 14px 6px; }
-  .fg-rb__step { padding: 8px 10px; font-size: 12px; }
-  .fg-rb__main { padding: 24px 20px 48px; }
-  .fg-rb__preview-head { padding: 0 12px; }
+   • Default (≥1180px) — 3-column grid: 200px rail | flexible editor
+     | flexible preview that auto-scales the A4 sheet to fit.
+   • 900–1179px — narrow desktop / small laptop: rail shrinks slightly
+     and editor+preview split adjusts. Preview still auto-scales.
+   • <900px — tablet/mobile: rail becomes a horizontal strip on top,
+     editor+preview stack vertically. On mobile (<600px), a tab toggle
+     lets the user switch between EDIT and PREVIEW.
+*/
+
+@media (max-width: 1180px) {
+  .fg-rb__body {
+    grid-template-columns: 180px minmax(0, 1fr) minmax(360px, 1.05fr);
+  }
+  .fg-rb__rail { padding: 16px 8px; }
+  .fg-rb__step { padding: 8px 10px; font-size: 12.5px; }
+  .fg-rb__main { padding: 24px 22px 48px; }
 }
 
 @media (max-width: 900px) {
-  .fg-rb__body { flex-direction: column; overflow-y: auto; }
+  .fg-rb__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    overflow-y: hidden;
+  }
   .fg-rb__rail {
     width: 100%;
-    max-width: 100%;
     border-right: 0;
     border-bottom: 1px solid var(--color-card-border);
     padding: 8px 12px;
@@ -900,16 +1048,56 @@
   .fg-rb__step { padding: 6px 10px; white-space: nowrap; font-size: 12px; }
   .fg-rb__step-label { font-size: 12px; }
 
+  /* On tablet preview takes a fixed-height band; mobile toggle
+     below swaps visibility. */
   .fg-rb__preview {
-    width: 100%;
     border-left: 0;
     border-top: 1px solid var(--color-card-border);
-    height: 560px;
+    height: 540px;
+    overflow: hidden;
   }
 
   .fg-rb__main { padding: 20px 16px; }
-  .fg-start-cards { grid-template-columns: 1fr; }
   .fg-field-grid { grid-template-columns: 1fr; }
+}
+
+/* Mobile: EDIT <-> PREVIEW toggle */
+@media (max-width: 640px) {
+  .fg-rb__body { padding-bottom: 64px; }
+  .fg-rb__body.is-mobile-preview .fg-rb__main { display: none; }
+  .fg-rb__body.is-mobile-preview .fg-rb__rail { display: none; }
+  .fg-rb__body:not(.is-mobile-preview) .fg-rb__preview { display: none; }
+  .fg-rb__preview { height: calc(100vh - 220px); }
+  .fg-rb__mobile-toggle {
+    display: inline-flex;
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 50;
+    background: var(--color-paper);
+    border: 1px solid var(--color-card-border);
+    border-radius: var(--radius-pill);
+    padding: 4px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    gap: 4px;
+  }
+  .fg-rb__mobile-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-ink-secondary);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .fg-rb__mobile-btn.is-active {
+    background: var(--color-signal-blue);
+    color: #fff;
+  }
 }
 
 @media (max-width: 480px) {
