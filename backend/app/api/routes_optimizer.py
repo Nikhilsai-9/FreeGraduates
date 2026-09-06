@@ -182,15 +182,19 @@ async def tailor_optimization(
     }
 
     tailoring = tailor_resume(rec.get("sourceResume") or {}, jd_payload)
+    # Persist changesApplied and generatedBy so subsequent GET /{id} reads
+    # carry the same shape as this POST response. Otherwise the UI shows
+    # the tailored candidate but loses the change list whenever it
+    # re-fetches the record after Tailor.
     updated = storage.update(
         user.uid,
         optimization_id,
         tailoredResume=tailoring.get("tailoredCandidate"),
+        changesApplied=tailoring.get("changesApplied", []),
+        generatedBy=tailoring.get("generatedBy", "rules"),
         status="tailored",
         error=None,
     )
-    updated["changesApplied"] = tailoring.get("changesApplied", [])
-    updated["generatedBy"] = tailoring.get("generatedBy", "rules")
     return updated
 
 

@@ -27,7 +27,10 @@ const ROUTES = [
   { id: "ats",       path: "/ats-scanner" },
   { id: "optimizer", path: "/optimizer" },
   { id: "coach",     path: "/coach" },
+  { id: "cover",     path: "/cover-letter" },
   { id: "history",   path: "/history" },
+  { id: "profile",   path: "/profile" },
+  { id: "settings",  path: "/settings" },
 ];
 
 const SUMMARY = {

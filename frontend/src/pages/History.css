@@ -50,6 +50,7 @@
   justify-content: space-between;
   gap: 16px;
   transition: var(--transition);
+  min-width: 0;
 }
 
 .history-card:hover {
@@ -62,6 +63,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+  min-width: 0;
 }
 
 .history-card-badges {
@@ -69,12 +71,29 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.history-card-badges .badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: right;
 }
 
 .history-search-row {
   margin-bottom: 24px;
   max-width: 480px;
+  width: 100%;
+}
+
+.history-search-row input.form-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .history-header-actions {
@@ -107,6 +126,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm, 6px);
   padding: 2px;
+  flex-wrap: wrap;
 }
 
 .btn-danger {
@@ -129,10 +149,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .file-icon-badge {
   font-size: 24px;
+  flex-shrink: 0;
 }
 
 .history-card-filename {
@@ -171,6 +194,7 @@
   gap: 8px;
   border-top: 1px solid var(--border);
   padding-top: 12px;
+  flex-wrap: wrap;
 }
 
 .empty-history-card {
@@ -181,4 +205,23 @@
 .empty-icon {
   font-size: 48px;
   margin-bottom: 12px;
+}
+
+/* Narrow-viewport hardening: stack card top vertically, shrink badges
+   so the row never overflows the card at 375px. */
+@media (max-width: 480px) {
+  .history-card-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .history-card-badges {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .history-card-badges .badge {
+    text-align: left;
+  }
+  .history-card-actions {
+    justify-content: flex-start;
+  }
 }

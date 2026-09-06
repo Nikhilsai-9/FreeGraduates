@@ -488,6 +488,13 @@ export default function ResumeBuilderView({ initialOptions }) {
                 onFile={onFileSelected}
                 onResetUpload={resetUpload}
                 onLoadResume={loadSavedResume}
+                linkedinOpen={linkedinOpen}
+                setLinkedinOpen={setLinkedinOpen}
+                linkedinText={linkedinText}
+                setLinkedinText={setLinkedinText}
+                linkedinBusy={linkedinBusy}
+                setLinkedinBusy={setLinkedinBusy}
+                onLinkedinImport={handleLinkedinImport}
               />
             )}
             {step === "personal" && (
@@ -645,7 +652,9 @@ export default function ResumeBuilderView({ initialOptions }) {
 function StartStep({
   creationPath, setCreationPath, templates, templateId, setTemplateId,
   savedIds, uploadPhase, uploadProgress, extractError,
-  fileInput, onScratch, onUseTemplate, onFile, onResetUpload, onLoadResume
+  fileInput, onScratch, onUseTemplate, onFile, onResetUpload, onLoadResume,
+  linkedinOpen, setLinkedinOpen, linkedinText, setLinkedinText,
+  linkedinBusy, setLinkedinBusy, onLinkedinImport
 }) {
   const isUploading = uploadPhase === "uploading" || uploadPhase === "extracting";
   const isSuccess = uploadPhase === "success";
@@ -754,7 +763,7 @@ function StartStep({
               />
               <button className="fg-btn fg-btn--primary fg-btn--block"
                 disabled={linkedinBusy || !linkedinText.trim()}
-                onClick={handleLinkedinImport}>
+                onClick={onLinkedinImport}>
                 {linkedinBusy ? "Extracting…" : "Extract from text"}
               </button>
               <p className="fg-start-card__hint">
