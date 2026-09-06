@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FileText,
@@ -14,27 +14,39 @@ import {
   Search,
   PenTool,
   Wand2,
-  Bot
+  Bot,
+  Loader2
 } from "lucide-react";
 import { resumeApi } from "../api/api";
-import { getSavedResumes, deleteResumeDraft, saveResumeDraft } from "../services/aiEngine";
 
 export default function DashboardView({ currentUser }) {
   const navigate = useNavigate();
   const [savedResumes, setSavedResumes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [backendLive, setBackendLive] = useState(null);
   const [resumeSearch, setResumeSearch] = useState("");
   const [actionNotice, setActionNotice] = useState("");
 
+  const loadResumes = useCallback(async () => {
+    try {
+      setLoading(true);
+      setLoadError(null);
+      const list = await resumeApi.list();
+      setSavedResumes(Array.isArray(list) ? list : []);
+    } catch (err) {
+      setLoadError(err?.response?.data?.detail || err.message || "Couldn\u2019t load your resumes.");
+      setSavedResumes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadResumes();
     resumeApi.health().then(() => setBackendLive(true)).catch(() => setBackendLive(false));
-  }, []);
-
-  const loadResumes = () => {
-    const list = getSavedResumes();
-    setSavedResumes(list);
-  };
+  }, [loadResumes]);
 
   const showNotice = (text) => {
     setActionNotice(text);
@@ -57,32 +69,41 @@ export default function DashboardView({ currentUser }) {
     navigate(`/builder/${resume.id}`);
   };
 
-  const handleDuplicateResume = (resume) => {
-    const duplicated = {
-      ...resume,
-      id: `resume-${Date.now()}`,
-      versionName: `${resume.versionName || "Resume"} (Copy)`,
-      updatedAt: new Date().toISOString()
-    };
-    saveResumeDraft(duplicated);
-    loadResumes();
-    showNotice(`Duplicated "${duplicated.versionName}"`);
+  const handleDuplicateResume = async (resume) => {
+    try {
+      const copyName = `${resume.versionName || resume.personal?.fullName || "Resume"} (Copy)`;
+      await resumeApi.generate({
+        candidate: resume.candidate || resume.personal || {},
+        job: resume.job || { title: resume.versionName || "" },
+        templateId: resume.templateId || resume.templateStyle || "classic",
+      });
+      // Backend doesn't expose a "duplicate by name" endpoint; we simply
+      // navigate the user to a fresh builder pre-filled for them to save
+      // a new copy. This keeps semantics honest.
+      showNotice(`Open a new resume to save a copy of "${resume.versionName || "Untitled"}".`);
+      await loadResumes();
+      navigate("/builder/new?path=form&template=" + (resume.templateStyle || "classic"));
+    } catch (err) {
+      showNotice(`Couldn\u2019t duplicate: ${err.message || "unknown error"}`);
+    }
   };
 
-  const handleDeleteResume = (id, name) => {
-    if (savedResumes.length <= 1) {
-      alert("You must keep at least one active resume draft.");
-      return;
-    }
-    if (window.confirm(`Delete "${name || 'this resume'}"?`)) {
-      deleteResumeDraft(id);
-      loadResumes();
-      showNotice("Resume draft deleted.");
+  const handleDeleteResume = async (id, name) => {
+    if (!window.confirm(`Delete "${name || 'this resume'}"? This cannot be undone.`)) return;
+    try {
+      setDeletingId(id);
+      await resumeApi.remove(id);
+      setSavedResumes((prev) => prev.filter((r) => r.id !== id));
+      showNotice(`Deleted "${name || 'resume'}"`);
+    } catch (err) {
+      showNotice(`Couldn\u2019t delete: ${err.message || "unknown error"}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const filteredResumes = savedResumes.filter((r) => {
-    const title = (r.versionName || r.personal?.fullName || "").toLowerCase();
+    const title = (r.versionName || r.title || r.candidate?.fullName || r.personal?.fullName || "").toLowerCase();
     const query = resumeSearch.toLowerCase();
     return title.includes(query);
   });
@@ -94,8 +115,8 @@ export default function DashboardView({ currentUser }) {
 
   const hasResume = savedResumes.length > 0;
   const totalDrafts = savedResumes.length;
-  const latestUpdated = savedResumes[0]?.updatedAt
-    ? new Date(savedResumes[0].updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+  const latestUpdated = savedResumes[0]?.updatedAt || savedResumes[0]?.createdAt
+    ? new Date(savedResumes[0].updatedAt || savedResumes[0].createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
     : null;
 
   return (
@@ -239,7 +260,22 @@ export default function DashboardView({ currentUser }) {
           </div>
         </div>
 
-        {filteredResumes.length === 0 ? (
+        {loading ? (
+          <div className="pro-empty-resumes-box" role="status" aria-live="polite">
+            <Loader2 size={32} className="empty-icon fg-spin" />
+            <h3>Loading your resumes\u2026</h3>
+            <p>Fetching from the server.</p>
+          </div>
+        ) : loadError ? (
+          <div className="pro-empty-resumes-box" role="alert">
+            <FileText size={34} className="empty-icon" />
+            <h3>Couldn\u2019t load resumes</h3>
+            <p>{loadError}</p>
+            <button type="button" className="pro-btn-primary" onClick={loadResumes}>
+              <Loader2 size={14} /> Retry
+            </button>
+          </div>
+        ) : filteredResumes.length === 0 ? (
           <div className="pro-empty-resumes-box">
             <FileText size={34} className="empty-icon" />
             <h3>{hasResume ? "No matching resumes" : "No resumes yet"}</h3>
@@ -256,9 +292,12 @@ export default function DashboardView({ currentUser }) {
         ) : (
           <div className="pro-resumes-list">
             {filteredResumes.map((resume) => {
-              const editDate = resume.updatedAt
-                ? new Date(resume.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+              const editDate = resume.updatedAt || resume.createdAt
+                ? new Date(resume.updatedAt || resume.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
                 : "Recently";
+              const candidate = resume.candidate || resume.personal || {};
+              const title = resume.versionName || resume.title || candidate.fullName || "Untitled Resume";
+              const isDeleting = deletingId === resume.id;
               return (
                 <div key={resume.id} className="pro-resume-row">
                   <div className="pro-resume-row-main">
@@ -266,35 +305,30 @@ export default function DashboardView({ currentUser }) {
                       <FileText size={17} />
                     </div>
                     <div className="resume-row-info">
-                      <div className="resume-row-title">
-                        {resume.versionName || "Untitled Resume"}
-                      </div>
+                      <div className="resume-row-title">{title}</div>
                       <div className="resume-row-sub">
-                        {resume.personal?.fullName || resume.personal?.email || "Candidate"}
+                        {candidate.fullName || candidate.email || "Candidate"}
                         <span className="resume-row-date"><Clock size={11} /> {editDate}</span>
                       </div>
                     </div>
                   </div>
                   <div className="pro-resume-row-actions">
                     <span className="pro-tag-pill template">
-                      {(resume.templateStyle || "classic").toUpperCase()}
+                      {(resume.templateStyle || resume.templateId || "classic").toUpperCase()}
                     </span>
                     <button className="pro-row-btn edit" onClick={() => handleEditResume(resume)}>
                       <Edit3 size={13} /> Edit
                     </button>
-                    <button
-                      className="pro-row-btn icon-only"
-                      onClick={() => handleDuplicateResume(resume)}
-                      title="Duplicate"
-                    >
+                    <button className="pro-row-btn icon-only" onClick={() => handleDuplicateResume(resume)} title="Duplicate">
                       <Copy size={13} />
                     </button>
                     <button
                       className="pro-row-btn icon-only delete"
-                      onClick={() => handleDeleteResume(resume.id, resume.versionName)}
+                      onClick={() => handleDeleteResume(resume.id, title)}
                       title="Delete"
+                      disabled={isDeleting}
                     >
-                      <Trash2 size={13} />
+                      {isDeleting ? <Loader2 size={13} className="fg-spin" /> : <Trash2 size={13} />}
                     </button>
                   </div>
                 </div>
